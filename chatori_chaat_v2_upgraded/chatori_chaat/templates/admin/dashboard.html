@@ -1,0 +1,141 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}📊 Dashboard Overview{% endblock %}
+{% block content %}
+
+<!-- KPI CARDS -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="fin-card revenue">
+      <div class="fin-icon"><i class="fas fa-rupee-sign"></i></div>
+      <div class="fin-value">₹{{ "%.0f"|format(total_sales) }}</div>
+      <div class="fin-label">Total Revenue</div>
+      <div class="mt-2" style="font-size:0.75rem;opacity:0.8;">Today: ₹{{ "%.0f"|format(today_sales) }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="fin-card expense">
+      <div class="fin-icon"><i class="fas fa-shopping-cart"></i></div>
+      <div class="fin-value">₹{{ "%.0f"|format(total_expenses) }}</div>
+      <div class="fin-label">Total Expenses</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="fin-card profit">
+      <div class="fin-icon"><i class="fas fa-chart-line"></i></div>
+      <div class="fin-value">₹{{ "%.0f"|format(total_profit) }}</div>
+      <div class="fin-label">Net Profit</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="fin-card orders">
+      <div class="fin-icon"><i class="fas fa-receipt"></i></div>
+      <div class="fin-value">{{ total_orders }}</div>
+      <div class="fin-label">Total Orders</div>
+      <div class="mt-2" style="font-size:0.75rem;opacity:0.8;">Today: {{ today_orders }} | Customers: {{ total_customers }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Inventory + Pending Orders Strip -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="bg-white rounded-4 shadow-sm p-3 text-center">
+      <div class="h5 fw-bold mb-0">{{ "%.0f"|format(total_stock) }}</div>
+      <div class="small text-muted">Total Stock</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="bg-white rounded-4 shadow-sm p-3 text-center">
+      <div class="h5 fw-bold mb-0">{{ "%.0f"|format(remaining_stock) }}</div>
+      <div class="small text-muted">Remaining Stock</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="bg-white rounded-4 shadow-sm p-3 text-center">
+      <div class="h5 fw-bold mb-0">₹{{ "%.0f"|format(stock_value) }}</div>
+      <div class="small text-muted">Stock Value</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <a href="/admin/orders" class="text-decoration-none">
+      <div class="bg-white rounded-4 shadow-sm p-3 text-center h-100" style="{% if pending_orders > 0 %}border:1px solid rgba(255,107,0,0.3);{% endif %}">
+        <div class="h5 fw-bold mb-0" style="color:var(--saffron);">{{ pending_orders }}</div>
+        <div class="small text-muted">Pending Orders</div>
+      </div>
+    </a>
+  </div>
+</div>
+
+{% if low_stock_count > 0 %}
+<div class="alert border-0 rounded-4 mb-4 d-flex align-items-center justify-content-between" style="background:rgba(230,57,70,0.08);">
+  <div><i class="fas fa-exclamation-triangle text-danger me-2"></i><strong>{{ low_stock_count }}</strong> item(s) running low on stock.</div>
+  <a href="/admin/inventory" class="btn btn-sm btn-outline-danger">View Inventory</a>
+</div>
+{% endif %}
+
+<div class="row g-4">
+  <!-- Recent Bills -->
+  <div class="col-lg-8">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0"><i class="fas fa-receipt text-warning me-2"></i>Recent Bills</h6>
+        <div class="d-flex gap-2">
+          <a href="/admin/bills" class="btn btn-outline-secondary btn-sm">View All</a>
+          <a href="/billing" class="btn btn-saffron btn-sm"><i class="fas fa-plus me-1"></i>New Bill</a>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-cc table-hover mb-0">
+          <thead><tr><th>Bill No.</th><th>Customer</th><th>Date</th><th>Method</th><th class="text-end">Amount</th></tr></thead>
+          <tbody>
+            {% for bill in recent_bills %}
+            <tr>
+              <td><span class="badge" style="background:rgba(255,107,0,0.12);color:var(--saffron);">{{ bill.bill_number }}</span></td>
+              <td class="small">{{ bill.customer_name or 'Walk-in' }}{% if bill.mobile %}<br><span class="text-muted">{{ bill.mobile }}</span>{% endif %}</td>
+              <td class="small text-muted">{{ bill.date }}</td>
+              <td><span class="badge badge-{{ 'upi' if bill.payment_method=='UPI' else 'cash' }}">{{ bill.payment_method }}</span></td>
+              <td class="text-end fw-bold text-success">₹{{ "%.0f"|format(bill.grand_total) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-4">No bills yet. <a href="/billing">Create first bill</a></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions + Stats -->
+  <div class="col-lg-4">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+      <h6 class="fw-bold mb-3"><i class="fas fa-bolt text-warning me-2"></i>Quick Actions</h6>
+      <div class="d-grid gap-2">
+        <a href="/billing" class="btn btn-saffron"><i class="fas fa-receipt me-2"></i>New Bill</a>
+        <a href="/admin/orders" class="btn btn-outline-secondary"><i class="fas fa-list me-2"></i>Customer Orders</a>
+        <a href="/admin/inventory" class="btn btn-outline-secondary"><i class="fas fa-boxes me-2"></i>Inventory & Stock</a>
+        <a href="/admin/monthly" class="btn btn-outline-secondary"><i class="fas fa-calendar-alt me-2"></i>Monthly P&amp;L</a>
+        <a href="/admin/cashbook" class="btn btn-outline-secondary"><i class="fas fa-plus me-2"></i>Add Expense</a>
+        <a href="/admin/customers" class="btn btn-outline-secondary"><i class="fas fa-users me-2"></i>Customer History</a>
+        <a href="/api/export/bills/csv" class="btn btn-outline-success btn-sm"><i class="fas fa-download me-2"></i>Export Bills (CSV)</a>
+      </div>
+    </div>
+    {% if unread_notifs > 0 %}
+    <div class="alert border-0 rounded-4 mb-3" style="background:rgba(255,107,0,0.1);">
+      <i class="fas fa-bell text-warning me-2"></i>
+      <strong>{{ unread_notifs }}</strong> new notification(s).
+      <a href="/admin/notifications" class="ms-2 btn btn-sm btn-saffron">View</a>
+    </div>
+    {% endif %}
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-3"><i class="fas fa-map-marker-alt text-warning me-2"></i>Stall Info</h6>
+      <div class="small text-muted">
+        <p class="mb-1"><i class="fas fa-store me-2 text-warning"></i>Shop No. 9, Royal Complex</p>
+        <p class="mb-1"><i class="fas fa-map me-2 text-warning"></i>Sawarkar Chowk, Nashik</p>
+        <p class="mb-1"><i class="fas fa-phone me-2 text-warning"></i>8421941950</p>
+        <p class="mb-0"><i class="fab fa-instagram me-2 text-warning"></i>@chatori_.chaat</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

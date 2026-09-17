@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Reviews – Chatori Chaat{% endblock %}
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="section-eyebrow">Customer Love</span>
+    <h1 class="mt-2">What People <span class="text-warning">Say</span></h1>
+    <p>Real reviews from our amazing customers</p>
+  </div>
+</section>
+
+<section class="py-5" style="background:var(--cream);">
+  <div class="container">
+    <!-- Rating Summary -->
+    <div class="row justify-content-center mb-5">
+      <div class="col-md-6">
+        <div class="card border-0 shadow rounded-4 p-4 text-center">
+          {% if google_data %}
+          <div class="display-1 text-warning fw-bold">{{ "%.1f"|format(google_data.avg_rating) }}</div>
+          <div class="stars mb-2" style="font-size:2rem;">
+            {% for i in range(5) %}
+              {% if i < google_data.avg_rating|round(0,'floor')|int %}⭐{% else %}☆{% endif %}
+            {% endfor %}
+          </div>
+          <p class="text-muted mb-0">Based on <strong>{{ google_data.total_reviews }}</strong> Google reviews + <strong>{{ count }}</strong> website reviews</p>
+          <span class="badge mt-2" style="background:rgba(66,133,244,0.12);color:#4285F4;"><i class="fab fa-google me-1"></i>Live from Google</span>
+          {% else %}
+          <div class="display-1 text-warning fw-bold">{{ avg_rating }}</div>
+          <div class="stars mb-2" style="font-size:2rem;">
+            {% for i in range(5) %}
+              {% if i < avg_rating|int %}⭐{% else %}☆{% endif %}
+            {% endfor %}
+          </div>
+          <p class="text-muted mb-0">Based on <strong>{{ count }}</strong> customer reviews</p>
+          {% if not google_configured %}
+          <small class="text-muted d-block mt-2"><i class="fas fa-info-circle me-1"></i>Google Reviews can be connected from Admin &gt; Settings</small>
+          {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Review Form -->
+    <div class="row justify-content-center mb-5">
+      <div class="col-md-8">
+        <div class="contact-card">
+          <h4 class="fw-bold mb-4"><i class="fas fa-star text-warning me-2"></i>Leave a Review</h4>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Your Name *</label>
+              <input type="text" class="form-control" id="revName" placeholder="Enter your name">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Rating *</label>
+              <div class="star-rating mt-1" id="starRating">
+                {% for i in range(1,6) %}
+                <span class="star" data-val="{{ i }}" onclick="setRating({{ i }})">★</span>
+                {% endfor %}
+              </div>
+              <input type="hidden" id="ratingVal" value="0">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Your Review</label>
+              <textarea class="form-control" id="revComment" rows="3" placeholder="Share your experience…"></textarea>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-saffron px-4" onclick="submitReview()">
+                <i class="fas fa-paper-plane me-2"></i>Submit Review
+              </button>
+            </div>
+          </div>
+          <div id="reviewSuccess" class="alert alert-success mt-3 d-none">
+            🎉 Thank you for your review! We appreciate your feedback.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Google Reviews -->
+    {% if google_data and google_data.reviews %}
+    <h4 class="fw-bold mb-4"><i class="fab fa-google me-2" style="color:#4285F4;"></i>Google Reviews</h4>
+    <div class="row g-4 mb-5">
+      {% for review in google_data.reviews %}
+      <div class="col-md-6 col-lg-4 reveal">
+        <div class="review-card h-100">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="stars">{% for i in range(review.rating|int) %}⭐{% endfor %}</div>
+            <small class="text-muted">{{ review.created_at[:10] if review.created_at else '' }}</small>
+          </div>
+          <p class="review-quote">"{{ review.comment }}"</p>
+          <div class="mt-auto pt-3 d-flex align-items-center gap-2 border-top">
+            <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                 style="width:36px;height:36px;background:linear-gradient(135deg,#4285F4,#34A853);font-size:0.8rem;">
+              {{ review.name[0]|upper }}
+            </div>
+            <div>
+              <div class="reviewer-name">{{ review.name }}</div>
+              <small style="color:#4285F4;"><i class="fab fa-google me-1"></i>Google Review</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <h4 class="fw-bold mb-4"><i class="fas fa-star text-warning me-2"></i>Website Reviews</h4>
+    {% endif %}
+
+    <!-- All Reviews -->
+    <div class="row g-4">
+      {% for review in reviews %}
+      <div class="col-md-6 col-lg-4 reveal">
+        <div class="review-card h-100">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="stars">
+              {% for i in range(review.rating) %}⭐{% endfor %}
+            </div>
+            <small class="text-muted">{{ review.created_at[:10] }}</small>
+          </div>
+          <p class="review-quote">"{{ review.comment }}"</p>
+          <div class="mt-auto pt-3 d-flex align-items-center gap-2 border-top">
+            <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                 style="width:36px;height:36px;background:linear-gradient(135deg,var(--saffron),var(--turmeric));font-size:0.8rem;">
+              {{ review.name[0]|upper }}
+            </div>
+            <div>
+              <div class="reviewer-name">{{ review.name }}</div>
+              <small class="text-success"><i class="fas fa-check-circle me-1"></i>Verified Customer</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedRating = 0;
+
+function setRating(val) {
+  selectedRating = val;
+  document.getElementById('ratingVal').value = val;
+  document.querySelectorAll('.star').forEach((s, i) => {
+    s.classList.toggle('active', i < val);
+  });
+}
+
+document.querySelectorAll('.star').forEach(s => {
+  s.addEventListener('mouseover', () => {
+    document.querySelectorAll('.star').forEach((st, i) => {
+      st.style.color = i < parseInt(s.dataset.val) ? 'var(--turmeric)' : '#ddd';
+    });
+  });
+  s.addEventListener('mouseleave', () => {
+    document.querySelectorAll('.star').forEach((st, i) => {
+      st.style.color = i < selectedRating ? 'var(--turmeric)' : '#ddd';
+    });
+  });
+});
+
+function submitReview() {
+  const name = document.getElementById('revName').value.trim();
+  const rating = parseInt(document.getElementById('ratingVal').value);
+  const comment = document.getElementById('revComment').value.trim();
+  if (!name) { alert('Please enter your name'); return; }
+  if (!rating) { alert('Please select a rating'); return; }
+  fetch('/api/review', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({name, rating, comment})
+  }).then(r => r.json()).then(d => {
+    if (d.success) {
+      document.getElementById('reviewSuccess').classList.remove('d-none');
+      document.getElementById('revName').value = '';
+      document.getElementById('revComment').value = '';
+      setRating(0);
+    }
+  });
+}
+</script>
+{% endblock %}

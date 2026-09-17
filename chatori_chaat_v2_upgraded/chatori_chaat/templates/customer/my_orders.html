@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}My Orders – Chatori Chaat{% endblock %}
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="section-eyebrow">Your Account</span>
+    <h1 class="mt-2">My <span class="text-warning">Orders</span></h1>
+    <p>Track your past orders and payments</p>
+  </div>
+</section>
+
+<section class="py-5" style="background:var(--cream);">
+  <div class="container">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <div class="table-responsive">
+        <table class="table table-cc table-hover">
+          <thead><tr><th>Order No.</th><th>Items</th><th>Date</th><th>Amount</th><th>Payment</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for o in orders %}
+            <tr>
+              <td class="small fw-600">{{ o.order_number }}</td>
+              <td class="small">{{ o.items_summary or '—' }}</td>
+              <td class="small text-muted">{{ o.created_at[:16] }}</td>
+              <td class="small fw-bold">₹{{ "%.0f"|format(o.grand_total) }}</td>
+              <td><span class="badge {% if o.payment_status=='Paid' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ o.payment_status }}</span></td>
+              <td><span class="badge bg-secondary">{{ o.order_status }}</span></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted py-5">No orders yet. <a href="/menu">Browse the menu</a> to place your first order!</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

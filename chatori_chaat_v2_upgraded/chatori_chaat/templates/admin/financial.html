@@ -1,0 +1,181 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Financial Reports{% endblock %}
+{% block page_title %}💰 Financial Reports & P&L{% endblock %}
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+
+<!-- Period Selector -->
+<div class="bg-white rounded-4 shadow-sm p-3 mb-4">
+  <div class="d-flex flex-wrap align-items-center gap-3">
+    <span class="fw-bold small text-muted">Report Period:</span>
+    <ul class="nav period-tabs gap-2 mb-0" id="periodTabs">
+      <li class="nav-item"><button class="nav-link active" data-period="daily" onclick="loadFinancial('daily',this)">Today</button></li>
+      <li class="nav-item"><button class="nav-link" data-period="weekly" onclick="loadFinancial('weekly',this)">This Week</button></li>
+      <li class="nav-item"><button class="nav-link" data-period="monthly" onclick="loadFinancial('monthly',this)">This Month</button></li>
+      <li class="nav-item"><button class="nav-link" data-period="yearly" onclick="loadFinancial('yearly',this)">This Year</button></li>
+    </ul>
+    <div class="ms-auto d-flex gap-2">
+      <a href="/api/export/bills/csv" class="btn btn-outline-success export-btn"><i class="fas fa-file-csv me-1"></i>Bills CSV</a>
+      <a href="/api/export/expenses/csv" class="btn btn-outline-danger export-btn"><i class="fas fa-file-csv me-1"></i>Expenses CSV</a>
+    </div>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4" id="finCards">
+  <div class="col-6 col-xl-3"><div class="fin-card revenue"><div class="fin-icon"><i class="fas fa-arrow-up"></i></div><div class="fin-value" id="fc-revenue">₹0</div><div class="fin-label">Total Revenue</div></div></div>
+  <div class="col-6 col-xl-3"><div class="fin-card expense"><div class="fin-icon"><i class="fas fa-arrow-down"></i></div><div class="fin-value" id="fc-expense">₹0</div><div class="fin-label">Total Expenses</div></div></div>
+  <div class="col-6 col-xl-3"><div class="fin-card profit"><div class="fin-icon"><i class="fas fa-chart-line"></i></div><div class="fin-value" id="fc-profit">₹0</div><div class="fin-label">Net Profit / Loss</div><div class="mt-1" style="font-size:0.75rem;opacity:0.85;" id="fc-profitpct"></div></div></div>
+  <div class="col-6 col-xl-3"><div class="fin-card orders"><div class="fin-icon"><i class="fas fa-receipt"></i></div><div class="fin-value" id="fc-orders">0</div><div class="fin-label">Total Orders</div></div></div>
+</div>
+
+<!-- Monthly Summary Table -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-7">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-3"><i class="fas fa-table text-warning me-2"></i>Monthly Summary</h6>
+      <div class="table-responsive">
+        <table class="table table-cc table-hover" id="monthlySummaryTable">
+          <thead><tr><th>Month</th><th class="text-end">Revenue</th><th class="text-end">Expenses</th><th class="text-end">Profit</th><th class="text-end">Profit%</th></tr></thead>
+          <tbody id="monthlySummaryBody">
+            <tr><td colspan="5" class="text-center text-muted py-3">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="bg-white rounded-4 shadow-sm p-4 h-100">
+      <h6 class="fw-bold mb-3"><i class="fas fa-chart-pie text-warning me-2"></i>Revenue vs Expenses</h6>
+      <canvas id="revExpPie" height="220"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-3"><i class="fas fa-chart-bar text-warning me-2"></i>Monthly Sales Bar Chart</h6>
+      <canvas id="monthlySalesBar" height="120"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="bg-white rounded-4 shadow-sm p-4 h-100">
+      <h6 class="fw-bold mb-3"><i class="fas fa-chart-donut text-warning me-2"></i>Profit Distribution</h6>
+      <canvas id="profitPie" height="220"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-3"><i class="fas fa-credit-card text-warning me-2"></i>Payment Method Breakdown</h6>
+      <div id="paymentBreakdown"><div class="text-muted small text-center py-3">Loading…</div></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-3"><i class="fas fa-tags text-warning me-2"></i>Expense Categories</h6>
+      <div id="expenseCategories"><div class="text-muted small text-center py-3">Loading…</div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let revExpChart, salesBarChart, profitChart;
+
+function loadFinancial(period, btn) {
+  // Update active tab
+  document.querySelectorAll('#periodTabs .nav-link').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  fetch('/api/financial?period=' + period).then(r => r.json()).then(data => {
+    // Summary cards
+    document.getElementById('fc-revenue').textContent = '₹' + Math.round(data.revenue).toLocaleString('en-IN');
+    document.getElementById('fc-expense').textContent = '₹' + Math.round(data.expenses).toLocaleString('en-IN');
+    document.getElementById('fc-profit').textContent = (data.profit < 0 ? '-₹' : '₹') + Math.abs(Math.round(data.profit)).toLocaleString('en-IN');
+    document.getElementById('fc-orders').textContent = data.orders;
+    document.getElementById('fc-profitpct').textContent = data.profit >= 0
+      ? `Profit: ${data.profit_pct}%` : `Loss: ${Math.abs(data.profit_pct)}%`;
+
+    // Monthly summary table
+    const months = {};
+    data.monthly.forEach(m => { months[m.month] = { rev: m.revenue || 0, orders: m.orders || 0, exp: 0 }; });
+    data.exp_monthly.forEach(m => { if (months[m.month]) months[m.month].exp = m.expenses || 0; else months[m.month] = { rev: 0, orders: 0, exp: m.expenses || 0 }; });
+    const monthKeys = Object.keys(months).sort().reverse();
+    document.getElementById('monthlySummaryBody').innerHTML = monthKeys.length ? monthKeys.map(m => {
+      const r = months[m].rev, e = months[m].exp, p = r - e;
+      const pct = r ? (p/r*100).toFixed(1) : 0;
+      return `<tr>
+        <td class="small fw-600">${m}</td>
+        <td class="text-end text-success small">₹${Math.round(r).toLocaleString('en-IN')}</td>
+        <td class="text-end text-danger small">₹${Math.round(e).toLocaleString('en-IN')}</td>
+        <td class="text-end fw-bold small ${p>=0?'text-success':'text-danger'}">${p<0?'-₹':'₹'}${Math.abs(Math.round(p)).toLocaleString('en-IN')}</td>
+        <td class="text-end small"><span class="badge ${p>=0?'bg-success':'bg-danger'}">${pct}%</span></td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="5" class="text-center text-muted py-3">No data yet</td></tr>';
+
+    // Rev vs Exp Pie
+    if (revExpChart) revExpChart.destroy();
+    revExpChart = new Chart(document.getElementById('revExpPie'), {
+      type: 'doughnut',
+      data: { labels: ['Revenue','Expenses'], datasets: [{ data: [data.revenue, data.expenses], backgroundColor: ['#2D6A4F','#E63946'], borderWidth: 0 }] },
+      options: { responsive: true, cutout: '65%', plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // Monthly Sales Bar
+    const mLabels = data.monthly.map(m => m.month).reverse();
+    const mRev = data.monthly.map(m => m.revenue || 0).reverse();
+    const mExp = data.exp_monthly.reduce((acc, m) => { acc[m.month] = m.expenses || 0; return acc; }, {});
+    const mExpArr = mLabels.map(m => mExp[m] || 0);
+    if (salesBarChart) salesBarChart.destroy();
+    salesBarChart = new Chart(document.getElementById('monthlySalesBar'), {
+      type: 'bar',
+      data: {
+        labels: mLabels.length ? mLabels : ['No data'],
+        datasets: [
+          { label: 'Revenue (₹)', data: mRev, backgroundColor: 'rgba(45,106,79,0.8)', borderRadius: 6 },
+          { label: 'Expenses (₹)', data: mExpArr, backgroundColor: 'rgba(230,57,70,0.7)', borderRadius: 6 }
+        ]
+      },
+      options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    // Profit Pie
+    const profitVal = Math.max(0, data.profit);
+    const lossVal = Math.max(0, -data.profit);
+    if (profitChart) profitChart.destroy();
+    profitChart = new Chart(document.getElementById('profitPie'), {
+      type: 'doughnut',
+      data: { labels: ['Profit','Loss'], datasets: [{ data: [profitVal, lossVal + data.expenses], backgroundColor: ['#FF6B00','#E63946'], borderWidth: 0 }] },
+      options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // Payment breakdown
+    document.getElementById('paymentBreakdown').innerHTML = data.payment_breakdown.length
+      ? data.payment_breakdown.map(p => `
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <div><span class="badge badge-${p.payment_method==='UPI'?'upi':'cash'} me-2">${p.payment_method}</span><span class="small">${p.count} orders</span></div>
+          <strong class="text-success">₹${Math.round(p.total).toLocaleString('en-IN')}</strong>
+        </div>`).join('')
+      : '<p class="text-muted small text-center py-2">No data for this period</p>';
+
+    // Expense categories
+    document.getElementById('expenseCategories').innerHTML = data.exp_categories.length
+      ? data.exp_categories.map(e => `
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <span class="badge" style="background:rgba(255,107,0,0.12);color:var(--saffron);">${e.category}</span>
+          <strong class="text-danger">₹${Math.round(e.total).toLocaleString('en-IN')}</strong>
+        </div>`).join('')
+      : '<p class="text-muted small text-center py-2">No expenses for this period</p>';
+  });
+}
+
+loadFinancial('daily', document.querySelector('#periodTabs .nav-link'));
+</script>
+{% endblock %}

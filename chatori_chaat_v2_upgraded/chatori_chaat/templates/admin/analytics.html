@@ -1,0 +1,116 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}📈 Analytics & Charts{% endblock %}
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+
+<div class="row g-4 mb-4" id="analyticsCards">
+  <div class="col-6 col-xl-3"><div class="fin-card revenue"><div class="fin-icon"><i class="fas fa-rupee-sign"></i></div><div class="fin-value" id="totalSales">…</div><div class="fin-label">Total Sales</div></div></div>
+  <div class="col-6 col-xl-3"><div class="fin-card orders"><div class="fin-icon"><i class="fas fa-receipt"></i></div><div class="fin-value" id="totalOrders">…</div><div class="fin-label">Total Orders</div></div></div>
+  <div class="col-6 col-xl-3"><div class="fin-card expense"><div class="fin-icon"><i class="fas fa-shopping-cart"></i></div><div class="fin-value" id="totalExp">…</div><div class="fin-label">Total Expenses</div></div></div>
+  <div class="col-6 col-xl-3"><div class="fin-card profit"><div class="fin-icon"><i class="fas fa-chart-line"></i></div><div class="fin-value" id="totalProfit">…</div><div class="fin-label">Net Profit</div></div></div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-3"><i class="fas fa-chart-bar text-warning me-2"></i>Monthly Sales vs Expenses</h6>
+      <canvas id="salesChart" height="110"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-3"><i class="fas fa-chart-pie text-warning me-2"></i>Revenue Distribution</h6>
+      <canvas id="profitChart" height="220"></canvas>
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-3"><i class="fas fa-chart-line text-warning me-2"></i>7-Day Daily Sales Trend</h6>
+      <canvas id="dailyChart" height="70"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-3"><i class="fas fa-chart-line text-warning me-2"></i>Revenue Growth Trend</h6>
+      <canvas id="growthChart" height="140"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-3"><i class="fas fa-percentage text-warning me-2"></i>Growth % Month-on-Month</h6>
+      <canvas id="growthPctChart" height="140"></canvas>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+fetch('/api/analytics').then(r => r.json()).then(data => {
+  document.getElementById('totalSales').textContent = '₹' + Math.round(data.total_sales).toLocaleString('en-IN');
+  document.getElementById('totalOrders').textContent = data.total_orders;
+  document.getElementById('totalExp').textContent = '₹' + Math.round(data.total_expenses).toLocaleString('en-IN');
+  document.getElementById('totalProfit').textContent = '₹' + Math.round(data.total_profit).toLocaleString('en-IN');
+
+  const months = data.monthly.map(m => m.month).reverse();
+  const sales = data.monthly.map(m => m.sales || 0).reverse();
+  const expMap = data.monthly_exp.reduce((a,m) => { a[m.month] = m.expenses||0; return a; }, {});
+  const exps = months.map(m => expMap[m]||0);
+  const profits = months.map((m,i) => sales[i] - exps[i]);
+
+  // Sales vs Expenses bar
+  new Chart(document.getElementById('salesChart'), {
+    type: 'bar',
+    data: { labels: months.length ? months : ['No data'],
+      datasets: [
+        { label: 'Sales (₹)', data: sales, backgroundColor: 'rgba(45,106,79,0.8)', borderRadius: 6 },
+        { label: 'Expenses (₹)', data: exps, backgroundColor: 'rgba(230,57,70,0.7)', borderRadius: 6 }
+      ]},
+    options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  // Revenue distribution donut
+  new Chart(document.getElementById('profitChart'), {
+    type: 'doughnut',
+    data: { labels: ['Revenue','Expenses','Profit'],
+      datasets: [{ data: [data.total_sales, data.total_expenses, Math.max(0,data.total_profit)],
+        backgroundColor: ['#2D6A4F','#E63946','#FF6B00'], borderWidth: 0 }]},
+    options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom' } } }
+  });
+
+  // 7-day daily sales
+  const d7labels = data.daily_7.map(d => d.date);
+  const d7sales = data.daily_7.map(d => d.sales||0);
+  new Chart(document.getElementById('dailyChart'), {
+    type: 'bar',
+    data: { labels: d7labels.length ? d7labels : ['No data'],
+      datasets: [{ label: 'Daily Sales (₹)', data: d7sales, backgroundColor: 'rgba(255,107,0,0.8)', borderRadius: 6 }]},
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  // Growth line
+  new Chart(document.getElementById('growthChart'), {
+    type: 'line',
+    data: { labels: months.length ? months : ['No data'],
+      datasets: [
+        { label: 'Revenue', data: sales, borderColor: '#2D6A4F', backgroundColor: 'rgba(45,106,79,0.08)', fill: true, tension: 0.4 },
+        { label: 'Profit', data: profits, borderColor: '#FF6B00', backgroundColor: 'rgba(255,107,0,0.08)', fill: true, tension: 0.4 }
+      ]},
+    options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  // Growth %
+  const growthPct = sales.map((s,i) => i===0 ? 0 : sales[i-1] ? +((s-sales[i-1])/sales[i-1]*100).toFixed(1) : 0);
+  new Chart(document.getElementById('growthPctChart'), {
+    type: 'bar',
+    data: { labels: months.length ? months : ['No data'],
+      datasets: [{ label: 'Growth %', data: growthPct,
+        backgroundColor: growthPct.map(v => v >= 0 ? 'rgba(45,106,79,0.8)' : 'rgba(230,57,70,0.7)'), borderRadius: 6 }]},
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false } } }
+  });
+});
+</script>
+{% endblock %}

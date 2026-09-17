@@ -1,0 +1,91 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Bill History{% endblock %}
+{% block page_title %}🧾 Bill History{% endblock %}
+{% block content %}
+
+<!-- Filters -->
+<div class="bg-white rounded-4 shadow-sm p-3 mb-4">
+  <form method="GET" action="/admin/bills" class="row g-2 align-items-end">
+    <div class="col-sm-3">
+      <label class="form-label small fw-600">Filter by Date</label>
+      <input type="date" name="date" class="form-control form-control-sm" value="{{ date_filter }}">
+    </div>
+    <div class="col-sm-3">
+      <label class="form-label small fw-600">Customer Mobile</label>
+      <input type="text" name="mobile" class="form-control form-control-sm" placeholder="Search mobile…" value="{{ mobile_filter }}">
+    </div>
+    <div class="col-sm-3">
+      <label class="form-label small fw-600">Payment Method</label>
+      <select name="payment" class="form-select form-select-sm">
+        <option value="">All Methods</option>
+        <option value="Cash" {% if payment_filter=='Cash' %}selected{% endif %}>Cash</option>
+        <option value="UPI" {% if payment_filter=='UPI' %}selected{% endif %}>UPI</option>
+        <option value="Card" {% if payment_filter=='Card' %}selected{% endif %}>Card</option>
+      </select>
+    </div>
+    <div class="col-sm-3 d-flex gap-2">
+      <button type="submit" class="btn btn-saffron btn-sm flex-grow-1"><i class="fas fa-filter me-1"></i>Filter</button>
+      <a href="/admin/bills" class="btn btn-outline-secondary btn-sm">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- Summary -->
+<div class="row g-3 mb-4">
+  {% set total_amt = bills|sum(attribute='grand_total') %}
+  <div class="col-sm-4">
+    <div class="bg-white rounded-3 shadow-sm p-3 text-center">
+      <div class="h4 fw-bold text-success mb-0">{{ bills|length }}</div>
+      <div class="small text-muted">Bills Shown</div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="bg-white rounded-3 shadow-sm p-3 text-center">
+      <div class="h4 fw-bold text-warning mb-0">₹{{ "%.0f"|format(total_amt) }}</div>
+      <div class="small text-muted">Total Amount</div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="bg-white rounded-3 shadow-sm p-3 text-center">
+      <div class="d-flex gap-2 justify-content-center">
+        <a href="/api/export/bills/csv" class="btn btn-outline-success btn-sm export-btn"><i class="fas fa-download me-1"></i>CSV</a>
+      </div>
+      <div class="small text-muted mt-1">Export Bills</div>
+    </div>
+  </div>
+</div>
+
+<!-- Bills Table -->
+<div class="bg-white rounded-4 shadow-sm p-4">
+  <div class="table-responsive">
+    <table class="table table-cc table-hover">
+      <thead>
+        <tr>
+          <th>Bill No.</th><th>Customer</th><th>Mobile</th>
+          <th>Date & Time</th><th>Items</th>
+          <th class="text-center">Payment</th><th class="text-center">Status</th>
+          <th class="text-end">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for bill in bills %}
+        <tr>
+          <td><span class="badge" style="background:rgba(255,107,0,0.12);color:var(--saffron);font-size:0.75rem;">{{ bill.bill_number }}</span></td>
+          <td class="small fw-600">{{ bill.customer_name or 'Walk-in' }}</td>
+          <td class="small text-muted">{{ bill.mobile or '—' }}</td>
+          <td class="small text-muted">{{ bill.date }}<br><span style="font-size:0.7rem;">{{ bill.created_at[11:16] if bill.created_at else '' }}</span></td>
+          <td class="small text-muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ bill.items_list }}">{{ bill.items_list or '—' }}</td>
+          <td class="text-center"><span class="badge badge-{{ 'upi' if bill.payment_method=='UPI' else 'cash' }}">{{ bill.payment_method }}</span></td>
+          <td class="text-center"><span class="badge badge-{{ 'paid' if bill.payment_status=='Paid' else 'pending' }}">{{ bill.payment_status }}</span></td>
+          <td class="text-end fw-bold text-success">₹{{ "%.0f"|format(bill.grand_total) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-5">
+          <i class="fas fa-receipt fs-2 opacity-25 d-block mb-2"></i>No bills found. <a href="/billing">Create a bill</a>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

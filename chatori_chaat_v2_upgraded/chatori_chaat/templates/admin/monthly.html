@@ -1,0 +1,163 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Monthly P&L{% endblock %}
+{% block page_title %}📅 Monthly Profit & Loss Dashboard{% endblock %}
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+
+<div class="bg-white rounded-4 shadow-sm p-3 mb-4">
+  <div class="d-flex flex-wrap align-items-center gap-3">
+    <span class="fw-bold small text-muted">Select Month:</span>
+    <input type="month" id="monthPicker" class="form-control form-control-sm" style="max-width:170px;">
+    <div class="ms-auto d-flex gap-2">
+      <a href="#" id="exportCsv" class="btn btn-outline-success export-btn"><i class="fas fa-file-csv me-1"></i>CSV</a>
+      <a href="#" id="exportExcel" class="btn btn-outline-primary export-btn"><i class="fas fa-file-excel me-1"></i>Excel</a>
+      <a href="#" id="exportPdf" class="btn btn-outline-danger export-btn"><i class="fas fa-file-pdf me-1"></i>PDF</a>
+    </div>
+  </div>
+</div>
+
+<!-- Profit/Loss Indicator -->
+<div id="pnlIndicator" class="alert border-0 rounded-4 mb-4 fw-bold fs-5 text-center" style="background:rgba(45,106,79,0.1);">
+  Loading…
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3"><div class="fin-card revenue"><div class="fin-icon"><i class="fas fa-arrow-up"></i></div><div class="fin-value" id="m-revenue">₹0</div><div class="fin-label">Monthly Revenue</div></div></div>
+  <div class="col-6 col-xl-3"><div class="fin-card expense"><div class="fin-icon"><i class="fas fa-arrow-down"></i></div><div class="fin-value" id="m-expenses">₹0</div><div class="fin-label">Monthly Expenses</div></div></div>
+  <div class="col-6 col-xl-3"><div class="fin-card profit"><div class="fin-icon"><i class="fas fa-chart-line"></i></div><div class="fin-value" id="m-profit">₹0</div><div class="fin-label">Profit / Loss</div></div></div>
+  <div class="col-6 col-xl-3"><div class="fin-card orders"><div class="fin-icon"><i class="fas fa-receipt"></i></div><div class="fin-value" id="m-orders">0</div><div class="fin-label">Orders | Customers: <span id="m-customers">0</span></div></div></div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-7">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-3"><i class="fas fa-chart-bar text-warning me-2"></i>Revenue vs Expenses</h6>
+      <canvas id="revExpBar" height="130"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="bg-white rounded-4 shadow-sm p-4 h-100">
+      <h6 class="fw-bold mb-3"><i class="fas fa-chart-pie text-warning me-2"></i>Profit Distribution</h6>
+      <canvas id="profitPie" height="220"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-3"><i class="fas fa-wave-square text-warning me-2"></i>Monthly Sales Trend</h6>
+      <canvas id="trendLine" height="120"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="bg-white rounded-4 shadow-sm p-4 h-100">
+      <h6 class="fw-bold mb-3"><i class="fas fa-tags text-warning me-2"></i>Expense Categories</h6>
+      <div id="expCatList"><div class="text-muted small text-center py-3">Loading…</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-3"><i class="fas fa-trophy text-warning me-2"></i>Monthly Analytics</h6>
+      <table class="table table-sm mb-0">
+        <tr><td class="text-muted small">Best Selling Product (by revenue)</td><td class="fw-bold small text-end" id="a-best">—</td></tr>
+        <tr><td class="text-muted small">Most Ordered Product (by qty)</td><td class="fw-bold small text-end" id="a-most">—</td></tr>
+        <tr><td class="text-muted small">Highest Revenue Day</td><td class="fw-bold small text-end" id="a-revday">—</td></tr>
+        <tr><td class="text-muted small">Highest Expense Day</td><td class="fw-bold small text-end" id="a-expday">—</td></tr>
+        <tr><td class="text-muted small">Average Daily Revenue</td><td class="fw-bold small text-end" id="a-avgrev">—</td></tr>
+        <tr><td class="text-muted small">Average Daily Profit</td><td class="fw-bold small text-end" id="a-avgprofit">—</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-3"><i class="fas fa-info-circle text-warning me-2"></i>About This Report</h6>
+      <p class="text-muted small">This Monthly Profit &amp; Loss dashboard is for Admin eyes only and is not linked anywhere on the public website. It aggregates all bills and expenses recorded for the selected month, including both walk-in POS bills and online customer orders.</p>
+      <p class="text-muted small mb-0">Use the Export buttons above to download this report as CSV, Excel, or PDF for accounting and record-keeping.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let revExpChart, profitChart, trendChart;
+const monthPicker = document.getElementById('monthPicker');
+const now = new Date();
+monthPicker.value = now.toISOString().slice(0,7);
+
+function fmtMoney(v) { return (v<0?'-₹':'₹') + Math.abs(Math.round(v)).toLocaleString('en-IN'); }
+
+function loadMonthly() {
+  const month = monthPicker.value;
+  document.getElementById('exportCsv').href = '/api/export/monthly/csv?month=' + month;
+  document.getElementById('exportExcel').href = '/api/export/monthly/excel?month=' + month;
+  document.getElementById('exportPdf').href = '/api/export/monthly/pdf?month=' + month;
+
+  fetch('/api/admin/monthly?month=' + month).then(r => r.json()).then(data => {
+    document.getElementById('m-revenue').textContent = fmtMoney(data.revenue);
+    document.getElementById('m-expenses').textContent = fmtMoney(data.expenses);
+    document.getElementById('m-profit').textContent = fmtMoney(data.profit);
+    document.getElementById('m-orders').textContent = data.orders;
+    document.getElementById('m-customers').textContent = data.customers;
+
+    const indicator = document.getElementById('pnlIndicator');
+    if (data.is_profit) {
+      indicator.style.background = 'rgba(45,106,79,0.1)'; indicator.style.color = '#2D6A4F';
+      indicator.innerHTML = `🟢 Business Running in Profit — ${data.month}: ${fmtMoney(data.profit)} net profit`;
+    } else {
+      indicator.style.background = 'rgba(230,57,70,0.1)'; indicator.style.color = '#E63946';
+      indicator.innerHTML = `🔴 Business Running in Loss — ${data.month}: ${fmtMoney(Math.abs(data.profit))} net loss`;
+    }
+
+    document.getElementById('a-best').textContent = data.best_selling_product ? `${data.best_selling_product.item_name} (₹${Math.round(data.best_selling_product.revenue)})` : '—';
+    document.getElementById('a-most').textContent = data.most_ordered_product ? `${data.most_ordered_product.item_name} (${data.most_ordered_product.qty} sold)` : '—';
+    document.getElementById('a-revday').textContent = data.highest_revenue_day ? `${data.highest_revenue_day.date} (₹${Math.round(data.highest_revenue_day.total)})` : '—';
+    document.getElementById('a-expday').textContent = data.highest_expense_day ? `${data.highest_expense_day.date} (₹${Math.round(data.highest_expense_day.total)})` : '—';
+    document.getElementById('a-avgrev').textContent = fmtMoney(data.avg_daily_revenue);
+    document.getElementById('a-avgprofit').textContent = fmtMoney(data.avg_daily_profit);
+
+    if (revExpChart) revExpChart.destroy();
+    revExpChart = new Chart(document.getElementById('revExpBar'), {
+      type: 'bar',
+      data: { labels: ['This Month'], datasets: [
+        { label: 'Revenue', data: [data.revenue], backgroundColor: '#2D6A4F', borderRadius: 8 },
+        { label: 'Expenses', data: [data.expenses], backgroundColor: '#E63946', borderRadius: 8 }
+      ]},
+      options: { responsive: true, plugins: { legend: { position: 'top' } } }
+    });
+
+    const profitVal = Math.max(0, data.profit), lossVal = Math.max(0, -data.profit);
+    if (profitChart) profitChart.destroy();
+    profitChart = new Chart(document.getElementById('profitPie'), {
+      type: 'doughnut',
+      data: { labels: ['Profit','Loss/Expenses'], datasets: [{ data: [profitVal, lossVal + data.expenses], backgroundColor: ['#FF6B00','#E63946'], borderWidth: 0 }] },
+      options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom' } } }
+    });
+
+    const labels = data.daily_trend.map(d => d.date.slice(8));
+    const values = data.daily_trend.map(d => d.revenue || 0);
+    if (trendChart) trendChart.destroy();
+    trendChart = new Chart(document.getElementById('trendLine'), {
+      type: 'line',
+      data: { labels: labels.length ? labels : ['No data'], datasets: [{ label: 'Daily Revenue (₹)', data: values, borderColor: '#FF6B00', backgroundColor: 'rgba(255,107,0,0.1)', fill: true, tension: 0.3 }] },
+      options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    document.getElementById('expCatList').innerHTML = data.exp_categories.length
+      ? data.exp_categories.map(e => `<div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <span class="badge" style="background:rgba(255,107,0,0.12);color:var(--saffron);">${e.category}</span>
+          <strong class="text-danger">₹${Math.round(e.total).toLocaleString('en-IN')}</strong></div>`).join('')
+      : '<p class="text-muted small text-center py-3">No expenses recorded for this month</p>';
+  });
+}
+
+monthPicker.addEventListener('change', loadMonthly);
+loadMonthly();
+</script>
+{% endblock %}

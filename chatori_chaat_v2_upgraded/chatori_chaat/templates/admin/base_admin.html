@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Admin{% endblock %} – Chatori Chaat</title>
+  <link rel="icon" type="image/png" href="/static/images/logo.png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="/static/css/style.css" rel="stylesheet">
+  {% block extra_css %}{% endblock %}
+</head>
+<body style="background:#F0F2F5;font-family:'Poppins',sans-serif;">
+
+<div class="d-flex" style="min-height:100vh;">
+  <!-- Sidebar -->
+  <div class="admin-sidebar d-flex flex-column" style="width:240px;min-width:240px;position:sticky;top:0;height:100vh;overflow-y:auto;">
+    <div class="p-3 border-bottom border-secondary">
+      <div class="d-flex align-items-center gap-2">
+        <img src="/static/images/logo.png" alt="CC" class="admin-logo-img">
+        <div>
+          <div class="text-warning fw-bold small">Chatori Chaat</div>
+          <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);">Admin Panel</div>
+        </div>
+      </div>
+    </div>
+    <nav class="flex-grow-1 py-2">
+      <div class="px-3 py-1" style="font-size:0.65rem;color:rgba(255,255,255,0.3);letter-spacing:1px;text-transform:uppercase;">Main</div>
+      <a href="/admin" class="nav-link {% if request.path=='/admin' %}active{% endif %}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a>
+      <a href="/billing" class="nav-link" target="_blank"><i class="fas fa-receipt me-2"></i>New Bill</a>
+      <div class="px-3 py-1 mt-2" style="font-size:0.65rem;color:rgba(255,255,255,0.3);letter-spacing:1px;text-transform:uppercase;">Finance</div>
+      <a href="/admin/financial" class="nav-link {% if request.path=='/admin/financial' %}active{% endif %}"><i class="fas fa-chart-pie me-2"></i>Financial Reports</a>
+      <a href="/admin/monthly" class="nav-link {% if 'monthly' in request.path %}active{% endif %}"><i class="fas fa-calendar-alt me-2"></i>Monthly P&amp;L</a>
+      <a href="/admin/cashbook" class="nav-link {% if 'cashbook' in request.path %}active{% endif %}"><i class="fas fa-book me-2"></i>Cashbook & Expenses</a>
+      <a href="/admin/bills" class="nav-link {% if request.path=='/admin/bills' %}active{% endif %}"><i class="fas fa-file-invoice me-2"></i>Bill History</a>
+      <a href="/admin/payments" class="nav-link {% if 'payments' in request.path %}active{% endif %}"><i class="fas fa-wallet me-2"></i>Payment History</a>
+      <a href="/admin/analytics" class="nav-link {% if 'analytics' in request.path %}active{% endif %}"><i class="fas fa-chart-line me-2"></i>Analytics</a>
+      <div class="px-3 py-1 mt-2" style="font-size:0.65rem;color:rgba(255,255,255,0.3);letter-spacing:1px;text-transform:uppercase;">Customers &amp; Orders</div>
+      <a href="/admin/orders" class="nav-link {% if 'orders' in request.path %}active{% endif %}"><i class="fas fa-receipt me-2"></i>Customer Orders</a>
+      <a href="/admin/customers" class="nav-link {% if 'customers' in request.path %}active{% endif %}"><i class="fas fa-users me-2"></i>Customers</a>
+      <div class="px-3 py-1 mt-2" style="font-size:0.65rem;color:rgba(255,255,255,0.3);letter-spacing:1px;text-transform:uppercase;">Manage</div>
+      <a href="/admin/menu" class="nav-link {% if request.path=='/admin/menu' %}active{% endif %}"><i class="fas fa-utensils me-2"></i>Menu Items</a>
+      <a href="/admin/inventory" class="nav-link {% if 'inventory' in request.path %}active{% endif %}"><i class="fas fa-boxes me-2"></i>Inventory & Stock</a>
+      <a href="/admin/reviews" class="nav-link {% if 'reviews' in request.path %}active{% endif %}"><i class="fas fa-star me-2"></i>Reviews</a>
+      <a href="/admin/notifications" class="nav-link {% if 'notifications' in request.path %}active{% endif %}"><i class="fas fa-bell me-2"></i>Notifications</a>
+      <a href="/admin/settings" class="nav-link {% if 'settings' in request.path %}active{% endif %}"><i class="fas fa-cog me-2"></i>Settings</a>
+      <hr class="border-secondary my-2 mx-3">
+      <a href="/" class="nav-link" target="_blank"><i class="fas fa-external-link-alt me-2"></i>View Website</a>
+      <a href="/logout" class="nav-link" style="color:rgba(255,100,100,0.8)!important;"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
+    </nav>
+    <div class="p-3 border-top border-secondary">
+      <small style="color:rgba(255,255,255,0.35);font-size:0.68rem;">Logged in as <strong class="text-warning">admin</strong></small>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-grow-1 d-flex flex-column" style="min-width:0;">
+    <!-- Top bar -->
+    <div class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center" style="position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+      <h5 class="mb-0 fw-bold">{% block page_title %}Dashboard{% endblock %}</h5>
+      <div class="d-flex gap-3 align-items-center">
+        <small class="text-muted d-none d-md-block" id="current-time"></small>
+        <!-- Notification Bell -->
+        <div class="notif-bell-wrap" id="notifBell" onclick="toggleNotifPopup()">
+          <i class="fas fa-bell fs-5 text-muted"></i>
+          <span class="notif-count" id="notifCount"></span>
+        </div>
+        <!-- Notif Popup -->
+        <div class="notif-popup" id="notifPopup">
+          <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+            <strong class="small">Notifications</strong>
+            <a href="/admin/notifications" class="text-muted small text-decoration-none">View all</a>
+          </div>
+          <div id="notifList"><div class="p-3 text-center text-muted small">Loading…</div></div>
+        </div>
+        <a href="https://wa.me/918421941950" class="btn btn-success btn-sm" target="_blank"><i class="fab fa-whatsapp me-1"></i>WhatsApp</a>
+      </div>
+    </div>
+    <div class="p-4 flex-grow-1">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/main.js"></script>
+<script>
+function updateTime(){document.getElementById('current-time').textContent=new Date().toLocaleString('en-IN');}
+setInterval(updateTime,1000);updateTime();
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

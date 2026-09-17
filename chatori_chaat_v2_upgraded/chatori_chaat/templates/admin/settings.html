@@ -1,0 +1,58 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}⚙️ Settings{% endblock %}
+{% block content %}
+
+{% if saved %}
+<div class="alert alert-success rounded-3 mb-4"><i class="fas fa-check-circle me-2"></i>Settings saved successfully.</div>
+{% endif %}
+
+<form method="POST" action="/admin/settings">
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="bg-white rounded-4 shadow-sm p-4 h-100">
+        <h6 class="fw-bold mb-3"><i class="fas fa-qrcode text-warning me-2"></i>UPI Payment Settings</h6>
+        <p class="text-muted small">Used to generate the dynamic UPI QR code shown to customers at checkout. Enter your real business UPI ID to receive payments.</p>
+        <div class="mb-3">
+          <label class="form-label small fw-600">UPI ID</label>
+          <input type="text" name="upi_id" class="form-control" value="{{ settings.upi_id }}" placeholder="yourbusiness@upi">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-600">Display Name (Payee Name)</label>
+          <input type="text" name="upi_name" class="form-control" value="{{ settings.upi_name }}" placeholder="Chatori Chaat">
+        </div>
+        <div class="alert border-0 rounded-3 small" style="background:rgba(255,107,0,0.08);">
+          <i class="fas fa-info-circle text-warning me-2"></i>This is a self-reported "I have paid" demo flow. For production, integrate a UPI gateway (Razorpay/PhonePe/Paytm) with a server-side webhook to verify payments automatically.
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="bg-white rounded-4 shadow-sm p-4 h-100">
+        <h6 class="fw-bold mb-3"><i class="fab fa-google text-warning me-2"></i>Google Reviews Integration</h6>
+        <p class="text-muted small">Optional. If you provide a Google Place ID and a Places API key (with billing enabled on Google Cloud), live Google reviews will be fetched and shown on the Reviews page. Leave blank to keep showing only website reviews.</p>
+        <div class="mb-3">
+          <label class="form-label small fw-600">Google Place ID</label>
+          <input type="text" name="google_place_id" class="form-control" value="{{ settings.google_place_id }}" placeholder="ChIJ...">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-600">Google Places API Key</label>
+          <input type="text" name="google_api_key" class="form-control" value="{{ settings.google_api_key }}" placeholder="AIza...">
+        </div>
+        <a href="https://developers.google.com/maps/documentation/places/web-service/place-id" target="_blank" class="small" style="color:var(--saffron);">How to find your Place ID →</a>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="bg-white rounded-4 shadow-sm p-4">
+        <h6 class="fw-bold mb-3"><i class="fas fa-boxes text-warning me-2"></i>Inventory Settings</h6>
+        <label class="form-label small fw-600">Default Low Stock Threshold</label>
+        <input type="number" name="low_stock_default_threshold" class="form-control" value="{{ settings.low_stock_default_threshold }}" min="0" step="0.1">
+        <small class="text-muted">Used as the suggested alert threshold when adding new inventory items.</small>
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-saffron mt-4 px-5"><i class="fas fa-save me-2"></i>Save Settings</button>
+</form>
+{% endblock %}

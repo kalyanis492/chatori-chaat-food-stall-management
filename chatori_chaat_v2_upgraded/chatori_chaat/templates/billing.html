@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% block title %}Billing – Chatori Chaat{% endblock %}
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="section-eyebrow">Smart Billing</span>
+    <h1 class="mt-2"><span class="text-warning">Order</span> & Bill</h1>
+    <p>Add items, calculate totals, and generate professional invoices</p>
+  </div>
+</section>
+
+<section class="py-4" style="background:var(--cream);">
+  <div class="container-fluid px-3 px-md-4">
+    <div class="row g-4">
+      <!-- LEFT: Customer & Items -->
+      <div class="col-lg-5">
+        <div class="billing-panel mb-4">
+          <div class="billing-header">
+            <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i>Customer Details</h5>
+          </div>
+          <div class="p-3">
+            <div class="row g-3">
+              <div class="col-6">
+                <label class="form-label small fw-600">Bill Number</label>
+                <input type="text" class="form-control bg-light" id="billNumber" value="{{ bill_number }}" readonly>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-600">Date</label>
+                <input type="date" class="form-control" id="billDate">
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-600">Customer Name</label>
+                <input type="text" class="form-control" id="custName" placeholder="Name (optional)">
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-600">Mobile</label>
+                <input type="tel" class="form-control" id="custMobile" placeholder="10-digit">
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-600">Payment Method</label>
+                <select class="form-select" id="payMethod">
+                  <option value="Cash">💵 Cash</option>
+                  <option value="UPI">📱 UPI</option>
+                  <option value="Card">💳 Card</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-600">Payment Status</label>
+                <select class="form-select" id="payStatus">
+                  <option value="Paid">✅ Paid</option>
+                  <option value="Pending">⏳ Pending</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="billing-panel">
+          <div class="billing-header">
+            <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add Items</h5>
+          </div>
+          <div class="p-3">
+            <div class="input-group mb-3">
+              <span class="input-group-text"><i class="fas fa-search"></i></span>
+              <input type="text" id="itemSearch" class="form-control" placeholder="Search items…" oninput="searchItems(this.value)">
+            </div>
+            <div style="max-height:400px;overflow-y:auto;" class="pe-1">
+              {% set emojis = {'Panipuri':'🧆','Masala Puri':'🥘','Shevpuri':'🌮','Ragda Puri':'🍛','Dahipuri':'🥗','Papdi Chaat':'🍜','Ragda Chaat':'🍲','Dahi Khasta':'🥘','Bhel':'🍱','Khasta Bhel':'🥙','Cheese Shev Puri':'🧀','Cheese Ragda Chaat':'🧀'} %}
+              {% for item in items %}
+              <div class="d-flex align-items-center justify-content-between p-2 rounded-3 mb-2 item-row"
+                   style="background:white;border:1px solid #eee;cursor:pointer;"
+                   data-name="{{ item.name|lower }}"
+                   onclick="addBillItem('{{ item.name }}', {{ item.price }})">
+                <div class="d-flex align-items-center gap-2">
+                  <span style="font-size:1.4rem;">{{ emojis.get(item.name,'🍛') }}</span>
+                  <div>
+                    <div class="fw-600 small">{{ item.name }}</div>
+                    <small class="text-muted" style="font-size:0.7rem;">{{ item.category }}</small>
+                  </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="fw-bold" style="color:var(--saffron);">₹{{ item.price|int }}</span>
+                  <button class="btn btn-saffron" style="width:28px;height:28px;padding:0;font-size:0.9rem;line-height:1;border-radius:6px;">+</button>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Bill Preview -->
+      <div class="col-lg-7">
+        <div class="billing-panel h-100 d-flex flex-column">
+          <div class="billing-header d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>Bill Preview</h5>
+              <small class="opacity-75" id="bill-num-display">{{ bill_number }}</small>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-light" onclick="clearBill()"><i class="fas fa-trash me-1"></i>Clear</button>
+              <button class="btn btn-sm btn-light" onclick="printBill()"><i class="fas fa-print me-1"></i>Print</button>
+            </div>
+          </div>
+
+          <div id="invoiceArea" class="p-4 flex-grow-1">
+            <!-- Invoice Header -->
+            <div class="text-center mb-3" id="invoiceHeader">
+              <div class="d-flex justify-content-center align-items-center gap-2 mb-1">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CC" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
+                <div>
+                  <div class="fw-bold" style="color:var(--saffron);font-size:1.1rem;">Chatori Chaat</div>
+                  <small class="text-muted" style="font-size:0.65rem;">Swad ka Patakha, Mohalle ka Superstar</small>
+                </div>
+              </div>
+              <small class="text-muted d-block" style="font-size:0.7rem;">Shop No. 9, Sawarkar Chowk, Indira Nagar, Nashik | 📞 8421941950</small>
+              <hr class="my-2">
+              <div class="row small" style="font-size:0.78rem;">
+                <div class="col-6 text-start"><strong>Bill No:</strong> <span id="inv-bill-no">{{ bill_number }}</span></div>
+                <div class="col-6 text-end"><strong>Date:</strong> <span id="inv-date"></span></div>
+                <div class="col-6 text-start mt-1"><strong>Customer:</strong> <span id="inv-cust">Walk-in</span></div>
+                <div class="col-6 text-end mt-1"><strong>Mobile:</strong> <span id="inv-mobile">—</span></div>
+                <div class="col-6 text-start mt-1"><strong>Payment:</strong> <span id="inv-pay">Cash</span></div>
+                <div class="col-6 text-end mt-1"><strong>Status:</strong> <span id="inv-status">Paid</span></div>
+              </div>
+              <hr class="my-2">
+            </div>
+
+            <table class="table table-sm table-cc" id="billTable">
+              <thead>
+                <tr><th>#</th><th>Item</th><th class="text-center">Qty</th><th class="text-end">Rate</th><th class="text-end">Total</th><th class="no-print"></th></tr>
+              </thead>
+              <tbody id="billItems">
+                <tr id="emptyRow">
+                  <td colspan="6" class="text-center text-muted py-4">
+                    <i class="fas fa-utensils fs-3 d-block mb-2 opacity-25"></i>Click items to add them here
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="ms-auto mt-3" style="max-width:300px;">
+              <div class="d-flex justify-content-between mb-1 small"><span>Subtotal:</span><span id="subtotalDisplay">₹0.00</span></div>
+              <div class="d-flex justify-content-between mb-1 small align-items-center">
+                <label class="form-check d-flex align-items-center gap-2 mb-0">
+                  <input type="checkbox" id="gstToggle" class="form-check-input" onchange="recalc()">
+                  <span>GST (5%):</span>
+                </label>
+                <span id="gstDisplay">₹0.00</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2 small align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                  <label class="mb-0 small">Discount (₹):</label>
+                  <input type="number" id="discount" class="form-control form-control-sm" style="width:80px;" value="0" min="0" oninput="recalc()">
+                </div>
+                <span id="discountDisplay" class="text-danger">-₹0.00</span>
+              </div>
+              <div class="d-flex justify-content-between fw-bold p-2 rounded-3 text-white" style="background:linear-gradient(135deg,var(--saffron),var(--turmeric));">
+                <span>GRAND TOTAL:</span><span id="grandTotal">₹0.00</span>
+              </div>
+            </div>
+
+            <div class="text-center mt-3 small text-muted" id="invoiceFooter">
+              <i class="fas fa-heart text-danger"></i> Thank you for visiting Chatori Chaat! <i class="fas fa-heart text-danger"></i><br>
+              Instagram: @chatori_.chaat | WhatsApp: 8421941950
+            </div>
+          </div>
+
+          <div class="p-3 border-top d-flex flex-wrap gap-2 no-print">
+            <button class="btn btn-saffron flex-grow-1" onclick="saveBill()"><i class="fas fa-save me-1"></i>Save Bill</button>
+            <button class="btn btn-success flex-grow-1" onclick="printBill()"><i class="fas fa-print me-1"></i>Print</button>
+            <button class="btn btn-info text-white flex-grow-1" onclick="downloadPDF()"><i class="fas fa-download me-1"></i>PDF</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+let billItems = [];
+document.getElementById('billDate').valueAsDate = new Date();
+document.getElementById('inv-date').textContent = new Date().toLocaleDateString('en-IN');
+
+// Sync fields
+['custName','custMobile','billDate','payMethod','payStatus'].forEach(id => {
+  document.getElementById(id).addEventListener('input', syncHeader);
+});
+function syncHeader() {
+  document.getElementById('inv-cust').textContent = document.getElementById('custName').value || 'Walk-in';
+  document.getElementById('inv-mobile').textContent = document.getElementById('custMobile').value || '—';
+  document.getElementById('inv-pay').textContent = document.getElementById('payMethod').value;
+  document.getElementById('inv-status').textContent = document.getElementById('payStatus').value;
+  const d = new Date(document.getElementById('billDate').value);
+  if (!isNaN(d)) document.getElementById('inv-date').textContent = d.toLocaleDateString('en-IN');
+}
+
+function searchItems(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('.item-row').forEach(row => {
+    row.style.display = row.dataset.name.includes(q) ? '' : 'none';
+  });
+}
+
+// Load from menu cart
+try {
+  const saved = JSON.parse(sessionStorage.getItem('cart') || '[]');
+  saved.forEach(i => addBillItem(i.name, i.price, i.qty));
+  sessionStorage.removeItem('cart');
+} catch(e) {}
+
+function addBillItem(name, price, qty = 1) {
+  const e = document.getElementById('emptyRow');
+  if (e) e.remove();
+  const existing = billItems.find(i => i.name === name);
+  if (existing) { existing.qty += qty; renderBill(); return; }
+  billItems.push({ name, price: parseFloat(price), qty });
+  renderBill();
+}
+
+function renderBill() {
+  const tbody = document.getElementById('billItems');
+  tbody.innerHTML = '';
+  if (!billItems.length) {
+    tbody.innerHTML = `<tr id="emptyRow"><td colspan="6" class="text-center text-muted py-4"><i class="fas fa-utensils fs-3 d-block mb-2 opacity-25"></i>Click items to add</td></tr>`;
+    recalc(); return;
+  }
+  billItems.forEach((item, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="small">${i+1}</td>
+      <td class="small fw-600">${item.name}</td>
+      <td class="text-center">
+        <div class="input-group input-group-sm" style="width:90px;margin:auto;">
+          <button class="btn btn-outline-secondary py-0 px-1" onclick="changeQty(${i},-1)">−</button>
+          <input type="number" class="form-control text-center py-0 px-1" value="${item.qty}" style="min-width:34px;"
+                 onchange="billItems[${i}].qty=Math.max(1,parseInt(this.value)||1);renderBill();">
+          <button class="btn btn-outline-secondary py-0 px-1" onclick="changeQty(${i},1)">+</button>
+        </div>
+      </td>
+      <td class="text-end small">₹${item.price.toFixed(2)}</td>
+      <td class="text-end small fw-bold">₹${(item.price*item.qty).toFixed(2)}</td>
+      <td class="no-print text-center"><button class="btn btn-sm btn-danger py-0 px-1" onclick="removeItem(${i})"><i class="fas fa-times"></i></button></td>`;
+    tbody.appendChild(tr);
+  });
+  recalc();
+}
+
+function changeQty(i, d) { billItems[i].qty = Math.max(1, billItems[i].qty + d); renderBill(); }
+function removeItem(i) { billItems.splice(i, 1); renderBill(); }
+
+function recalc() {
+  const sub = billItems.reduce((s, i) => s + i.price * i.qty, 0);
+  const gst = document.getElementById('gstToggle').checked ? sub * 0.05 : 0;
+  const disc = parseFloat(document.getElementById('discount').value) || 0;
+  const grand = Math.max(0, sub + gst - disc);
+  document.getElementById('subtotalDisplay').textContent = '₹' + sub.toFixed(2);
+  document.getElementById('gstDisplay').textContent = '₹' + gst.toFixed(2);
+  document.getElementById('discountDisplay').textContent = '-₹' + disc.toFixed(2);
+  document.getElementById('grandTotal').textContent = '₹' + grand.toFixed(2);
+}
+
+function clearBill() { if (confirm('Clear all items?')) { billItems = []; renderBill(); } }
+
+function saveBill() {
+  if (!billItems.length) { alert('Add at least one item!'); return; }
+  const sub = billItems.reduce((s, i) => s + i.price * i.qty, 0);
+  const gst = document.getElementById('gstToggle').checked ? sub * 0.05 : 0;
+  const disc = parseFloat(document.getElementById('discount').value) || 0;
+  fetch('/api/bill', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      bill_number: document.getElementById('billNumber').value,
+      customer_name: document.getElementById('custName').value || 'Walk-in',
+      mobile: document.getElementById('custMobile').value,
+      date: document.getElementById('billDate').value,
+      payment_method: document.getElementById('payMethod').value,
+      payment_status: document.getElementById('payStatus').value,
+      subtotal: sub, gst, discount: disc,
+      grand_total: Math.max(0, sub + gst - disc),
+      items: billItems.map(i => ({name:i.name,price:i.price,qty:i.qty,total:i.price*i.qty}))
+    })
+  }).then(r => r.json()).then(d => {
+    if (d.success) { alert('✅ Bill saved! ' + d.bill_number); }
+  });
+}
+
+function printBill() {
+  if (!billItems.length) { alert('Add items first!'); return; }
+  window.print();
+}
+
+function downloadPDF() {
+  if (!billItems.length) { alert('Add items first!'); return; }
+  html2pdf().set({
+    margin: 10, filename: document.getElementById('billNumber').value + '.pdf',
+    html2canvas: {scale: 2}, jsPDF: {unit:'mm', format:'a5', orientation:'portrait'}
+  }).from(document.getElementById('invoiceArea')).save();
+}
+</script>
+{% endblock %}

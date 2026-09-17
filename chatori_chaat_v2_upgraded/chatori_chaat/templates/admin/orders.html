@@ -1,0 +1,86 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Customer Orders{% endblock %}
+{% block page_title %}🧾 Customer Orders{% endblock %}
+{% block content %}
+
+<!-- Filters -->
+<div class="bg-white rounded-4 shadow-sm p-3 mb-4">
+  <form method="GET" action="/admin/orders" class="row g-2 align-items-end">
+    <div class="col-sm-4">
+      <label class="form-label small fw-600">Order Status</label>
+      <select name="status" class="form-select form-select-sm">
+        <option value="">All Statuses</option>
+        {% for s in ['Placed','Preparing','Ready','Completed','Cancelled'] %}
+        <option value="{{ s }}" {% if status_filter==s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-sm-4">
+      <label class="form-label small fw-600">Customer Mobile</label>
+      <input type="text" name="mobile" class="form-control form-control-sm" placeholder="Search mobile…" value="{{ mobile_filter }}">
+    </div>
+    <div class="col-sm-4 d-flex gap-2">
+      <button type="submit" class="btn btn-saffron btn-sm flex-grow-1"><i class="fas fa-filter me-1"></i>Filter</button>
+      <a href="/admin/orders" class="btn btn-outline-secondary btn-sm">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="bg-white rounded-4 shadow-sm p-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="fw-bold mb-0"><i class="fas fa-receipt text-warning me-2"></i>Online Orders Placed by Customers <span class="badge bg-secondary ms-1">{{ orders|length }}</span></h6>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-cc table-hover">
+      <thead>
+        <tr>
+          <th>Order No.</th><th>Customer</th><th>Mobile</th><th>Items</th><th>Date</th>
+          <th class="text-end">Amount</th><th class="text-center">Payment</th><th class="text-center">Order Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr id="order-{{ o.id }}">
+          <td class="small fw-600">{{ o.order_number }}</td>
+          <td class="small">{{ o.customer_name }}</td>
+          <td class="small"><a href="tel:{{ o.mobile }}" class="text-decoration-none">{{ o.mobile }}</a></td>
+          <td class="small text-muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ o.items_summary }}">{{ o.items_summary or '—' }}</td>
+          <td class="small text-muted">{{ o.created_at[:16] if o.created_at else '' }}</td>
+          <td class="text-end fw-bold text-success">₹{{ "%.0f"|format(o.grand_total) }}</td>
+          <td class="text-center"><span class="badge {% if o.payment_status=='Paid' %}badge-paid{% else %}badge-pending{% endif %}">{{ o.payment_status }}</span></td>
+          <td class="text-center">
+            <select class="form-select form-select-sm status-select" data-id="{{ o.id }}" style="min-width:130px;">
+              {% for s in ['Placed','Preparing','Ready','Completed','Cancelled'] %}
+              <option value="{{ s }}" {% if o.order_status==s %}selected{% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-5">
+          <i class="fas fa-receipt fs-2 opacity-25 d-block mb-2"></i>No online orders yet. Customers placing orders via the Menu page will appear here.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.status-select').forEach(sel => {
+  sel.addEventListener('change', () => {
+    fetch('/api/admin/order/' + sel.dataset.id, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({order_status: sel.value})
+    }).then(r => r.json()).then(d => {
+      if (d.success) {
+        sel.style.borderColor = '#2D6A4F';
+        setTimeout(() => sel.style.borderColor = '', 1000);
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

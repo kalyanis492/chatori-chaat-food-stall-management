@@ -1,0 +1,102 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Payment History{% endblock %}
+{% block page_title %}💳 Online & Cash Payment History{% endblock %}
+{% block content %}
+
+<!-- Filters -->
+<div class="bg-white rounded-4 shadow-sm p-3 mb-4">
+  <form method="GET" action="/admin/payments" class="row g-2 align-items-end">
+    <div class="col-sm-4">
+      <label class="form-label small fw-600">Customer Mobile</label>
+      <input type="text" name="mobile" class="form-control form-control-sm" placeholder="Search mobile…" value="{{ mobile_filter }}">
+    </div>
+    <div class="col-sm-4">
+      <label class="form-label small fw-600">Date</label>
+      <input type="date" name="date" class="form-control form-control-sm" value="{{ date_filter }}">
+    </div>
+    <div class="col-sm-4 d-flex gap-2">
+      <button type="submit" class="btn btn-saffron btn-sm flex-grow-1"><i class="fas fa-filter me-1"></i>Filter</button>
+      <a href="/admin/payments" class="btn btn-outline-secondary btn-sm">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- Totals -->
+<div class="row g-3 mb-4">
+  {% for t in totals %}
+  <div class="col-6 col-xl-3">
+    <div class="fin-card {% if t.payment_method=='UPI' %}revenue{% elif t.payment_method=='Cash' %}orders{% else %}profit{% endif %}">
+      <div class="fin-icon"><i class="fas {% if t.payment_method=='UPI' %}fa-mobile-alt{% elif t.payment_method=='Cash' %}fa-money-bill-wave{% else %}fa-credit-card{% endif %}"></i></div>
+      <div class="fin-value">₹{{ "%.0f"|format(t.total) }}</div>
+      <div class="fin-label">{{ t.payment_method }} ({{ t.cnt }} payments)</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<ul class="nav nav-tabs mb-3" id="payTabs">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#onlineTab">📱 Online Payments (UPI)</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#cashTab">💵 Cash Payments</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#cardTab">💳 Card Payments</button></li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="onlineTab">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <div class="d-flex justify-content-between mb-3">
+        <h6 class="fw-bold mb-0">Online Payments</h6>
+        <a href="/api/export/payments/csv?type=online" class="btn btn-outline-success btn-sm"><i class="fas fa-download me-1"></i>Export CSV</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-cc table-hover">
+          <thead><tr><th>Bill No.</th><th>Customer</th><th>Mobile</th><th>Date</th><th class="text-end">Amount</th></tr></thead>
+          <tbody>
+            {% for b in online %}
+            <tr><td class="small fw-600">{{ b.bill_number }}</td><td class="small">{{ b.customer_name }}</td><td class="small">{{ b.mobile or '—' }}</td><td class="small text-muted">{{ b.date }}</td><td class="text-end fw-bold text-success">₹{{ "%.0f"|format(b.grand_total) }}</td></tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-4">No online payments found</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="tab-pane fade" id="cashTab">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <div class="d-flex justify-content-between mb-3">
+        <h6 class="fw-bold mb-0">Cash Payments</h6>
+        <a href="/api/export/payments/csv?type=cash" class="btn btn-outline-success btn-sm"><i class="fas fa-download me-1"></i>Export CSV</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-cc table-hover">
+          <thead><tr><th>Bill No.</th><th>Customer</th><th>Date</th><th class="text-end">Amount</th></tr></thead>
+          <tbody>
+            {% for b in cash %}
+            <tr><td class="small fw-600">{{ b.bill_number }}</td><td class="small">{{ b.customer_name }}</td><td class="small text-muted">{{ b.date }}</td><td class="text-end fw-bold text-success">₹{{ "%.0f"|format(b.grand_total) }}</td></tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-4">No cash payments found</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="tab-pane fade" id="cardTab">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-3">Card Payments</h6>
+      <div class="table-responsive">
+        <table class="table table-cc table-hover">
+          <thead><tr><th>Bill No.</th><th>Customer</th><th>Date</th><th class="text-end">Amount</th></tr></thead>
+          <tbody>
+            {% for b in card %}
+            <tr><td class="small fw-600">{{ b.bill_number }}</td><td class="small">{{ b.customer_name }}</td><td class="small text-muted">{{ b.date }}</td><td class="text-end fw-bold text-success">₹{{ "%.0f"|format(b.grand_total) }}</td></tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-4">No card payments found</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

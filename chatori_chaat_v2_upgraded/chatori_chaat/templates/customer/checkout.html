@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Checkout – Chatori Chaat{% endblock %}
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="section-eyebrow">Order #{{ order.order_number }}</span>
+    <h1 class="mt-2">Scan &amp; <span class="text-warning">Pay</span></h1>
+    <p>Complete your payment to confirm your order.</p>
+  </div>
+</section>
+
+<section class="py-5" style="background:var(--cream);">
+  <div class="container">
+    <div class="row g-4 justify-content-center">
+      <div class="col-lg-5">
+        <div class="billing-panel h-100">
+          <div class="billing-header"><h5 class="mb-0"><i class="fas fa-receipt me-2"></i>Order Summary</h5></div>
+          <div class="p-4">
+            <table class="table table-sm table-cc">
+              <thead><tr><th>Item</th><th class="text-center">Qty</th><th class="text-end">Total</th></tr></thead>
+              <tbody>
+                {% for item in items %}
+                <tr><td class="small">{{ item.item_name }}</td><td class="text-center small">{{ item.quantity }}</td><td class="text-end small">₹{{ "%.0f"|format(item.total) }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <hr>
+            <div class="d-flex justify-content-between fw-bold p-2 rounded-3 text-white" style="background:linear-gradient(135deg,var(--saffron),var(--turmeric));">
+              <span>Total Payable:</span><span>₹{{ "%.2f"|format(order.grand_total) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="billing-panel h-100 text-center">
+          <div class="billing-header"><h5 class="mb-0"><i class="fas fa-qrcode me-2"></i>UPI QR Payment</h5></div>
+          <div class="p-4">
+            {% if qr_available and qr_image %}
+            <div class="qr-box mx-auto mb-3">
+              <img src="{{ qr_image }}" alt="UPI QR Code" class="img-fluid">
+            </div>
+            <p class="small text-muted mb-1">Scan with any UPI app (Google Pay, PhonePe, Paytm, BHIM)</p>
+            <p class="fw-bold mb-1" style="color:var(--saffron);">UPI ID: {{ upi_id }}</p>
+            <p class="h4 fw-bold mb-3">₹{{ "%.2f"|format(order.grand_total) }}</p>
+            {% else %}
+            <div class="alert alert-warning small rounded-3">
+              QR generation library not installed on the server. Pay manually using UPI ID <strong>{{ upi_id }}</strong> for the exact amount shown above.
+            </div>
+            {% endif %}
+
+            <form method="POST" action="/order/{{ order.id }}/confirm-payment">
+              <div class="mb-3">
+                <label class="form-label small fw-600">UPI Transaction / Reference ID (optional)</label>
+                <input type="text" name="upi_ref" class="form-control" placeholder="e.g. UPI Ref No. from your payment app">
+              </div>
+              <button type="submit" class="btn btn-saffron w-100"><i class="fas fa-check-circle me-2"></i>I Have Paid</button>
+            </form>
+            <p class="small text-muted mt-3 mb-0">
+              <i class="fas fa-info-circle me-1"></i>This is a demo confirmation flow. For production use, connect a UPI payment gateway (Razorpay/PhonePe/Paytm) so payments are verified automatically.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

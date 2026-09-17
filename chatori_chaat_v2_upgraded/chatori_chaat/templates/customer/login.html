@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Login – Chatori Chaat{% endblock %}
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="section-eyebrow">Customer Login</span>
+    <h1 class="mt-2">Welcome <span class="text-warning">Back</span></h1>
+    <p>Login to order online and pay instantly via UPI QR.</p>
+  </div>
+</section>
+
+<section class="py-5" style="background:var(--cream);">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-5 col-md-7">
+        <div class="auth-card">
+          {% if error %}
+          <div class="alert alert-danger rounded-3 small mb-3"><i class="fas fa-exclamation-circle me-2"></i>{{ error }}</div>
+          {% endif %}
+          <form method="POST" action="/customer-login{% if next %}?next={{ next }}{% endif %}">
+            <div class="mb-3">
+              <label class="form-label small fw-600">Mobile Number</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-mobile-alt text-muted"></i></span>
+                <input type="tel" name="mobile" class="form-control" placeholder="10-digit mobile number" required autofocus>
+              </div>
+            </div>
+            <div class="mb-4">
+              <label class="form-label small fw-600">Password</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-lock text-muted"></i></span>
+                <input type="password" name="password" class="form-control" placeholder="Your password" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-saffron w-100"><i class="fas fa-sign-in-alt me-2"></i>Login</button>
+          </form>
+          <div class="text-center mt-3 small text-muted">
+            New to Chatori Chaat? <a href="/register{% if next %}?next={{ next }}{% endif %}" class="fw-bold" style="color:var(--saffron);">Create an account</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

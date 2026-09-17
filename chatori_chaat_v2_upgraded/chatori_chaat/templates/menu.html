@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Menu – Chatori Chaat{% endblock %}
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="section-eyebrow">What We Serve</span>
+    <h1 class="mt-2">Our <span class="text-warning">Menu</span></h1>
+    <p>Fresh, tasty &amp; affordable – straight from the heart of Nashik</p>
+  </div>
+</section>
+
+<section class="py-5" style="background:var(--cream);">
+  <div class="container">
+    <!-- Search & Filter -->
+    <div class="row g-3 mb-5 justify-content-center">
+      <div class="col-md-5">
+        <div class="input-group input-group-lg">
+          <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+          <input type="text" id="menuSearch" class="form-control border-start-0 ps-0" placeholder="Search menu items…">
+        </div>
+      </div>
+      <div class="col-md-auto">
+        <div class="btn-group" id="categoryFilter">
+          <button class="btn btn-saffron active" data-cat="all">All Items</button>
+          <button class="btn btn-outline-secondary" data-cat="Special">Special</button>
+          <button class="btn btn-outline-secondary" data-cat="Main Dishes">Main Dishes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Note -->
+    <div class="alert border-0 mb-4" style="background:rgba(255,107,0,0.1); border-left:4px solid var(--saffron) !important; border-radius:12px;">
+      <strong>📦 Note:</strong> For parcel, ₹5 extra per box. We also accept Kitty Parties, Birthday Parties, and all types of bulk orders!
+      <a href="https://wa.me/918421941950" class="ms-3 btn btn-success btn-sm" target="_blank"><i class="fab fa-whatsapp me-1"></i>Order via WhatsApp</a>
+    </div>
+
+    <!-- Menu Grid -->
+    <div class="row g-4" id="menuGrid">
+      {% set emojis = {'Panipuri':'🧆','Masala Puri':'🥘','Shevpuri':'🌮','Ragda Puri':'🍛','Dahipuri':'🥗','Papdi Chaat':'🍜'
+      ,'Ragda Chaat':'🍲','Dahi Khasta':'🥘','Bhel':'🍱','Khasta Bhel':'🥙','Cheese Shev Puri':'🧀','Cheese Ragda Chaat':'🧀'} %}
+      {% for item in items %}
+      <div class="col-6 col-md-4 col-lg-3 menu-item-col" data-cat="{{ item.category }}" data-name="{{ item.name|lower }}">
+        <div class="menu-card h-100">
+         <div class="menu-card-image">
+   <img src="{{ url_for('static', filename='images/' + item.name|replace(' ','_')|lower + '.jpeg') }}"
+     onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/' + item.name|replace(' ','_')|lower + '.jpg') }}'"
+     alt="{{ item.name }}">
+</div>
+          <div class="menu-card-body">
+            <span class="cat-badge {% if item.category == 'Special' %}cat-special{% else %}cat-main{% endif %} mb-2">{{ item.category }}</span>
+            <div class="menu-card-name mt-1">{{ item.name }}</div>
+            <div class="menu-card-price">₹{{ item.price|int }}</div>
+          </div>
+          <div class="menu-card-footer">
+            <div class="d-flex align-items-center gap-2">
+              <div class="input-group input-group-sm" style="max-width:100px;">
+                <button class="btn btn-outline-secondary qty-btn" data-action="dec">−</button>
+                <input type="number" class="form-control text-center qty-input" value="1" min="1" max="20">
+                <button class="btn btn-outline-secondary qty-btn" data-action="inc">+</button>
+              </div>
+              <button class="btn-add flex-grow-1" 
+                      onclick="addToCart('{{ item.name }}', {{ item.price }}, this)">
+                <i class="fas fa-plus me-1"></i>Add
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div id="noResults" class="text-center py-5 d-none">
+      <div class="fs-1">🔍</div>
+      <h5 class="text-muted mt-2">No items found</h5>
+    </div>
+  </div>
+</section>
+
+<!-- Cart Sidebar Toast -->
+<div class="position-fixed bottom-0 start-0 p-3" style="z-index: 1050; width: 320px;" id="cartToast">
+  <div class="toast show border-0 shadow-lg rounded-4" style="background:var(--dark); color:white; display:none;" id="cartPanel">
+    <div class="toast-header" style="background:linear-gradient(135deg,var(--saffron),var(--turmeric)); color:white; border-radius:16px 16px 0 0;">
+      <strong class="me-auto"><i class="fas fa-shopping-cart me-2"></i>Cart <span id="cart-badge" class="badge bg-dark ms-1">0</span></strong>
+      <button type="button" class="btn-close btn-close-white" onclick="document.getElementById('cartPanel').style.display='none'"></button>
+    </div>
+    <div class="toast-body p-3">
+      <div id="cart-items-list" style="max-height:200px; overflow-y:auto;"></div>
+      <hr class="border-secondary my-2">
+      <div class="d-flex justify-content-between fw-bold">
+        <span>Total:</span><span id="cart-total-display">₹0</span>
+      </div>
+      {% if customer_logged_in %}
+      <form method="POST" action="/checkout" id="checkoutForm">
+        <input type="hidden" name="cart_json" id="cartJsonInput">
+        <button type="submit" class="btn btn-saffron w-100 mt-2"><i class="fas fa-qrcode me-1"></i>Checkout & Pay (QR)</button>
+      </form>
+      {% else %}
+      <a href="/customer-login?next=/menu" class="btn btn-saffron w-100 mt-2">
+        <i class="fas fa-sign-in-alt me-1"></i>Login to Checkout
+      </a>
+      <small class="d-block text-center mt-2 text-white-50">New here? <a href="/register" class="text-warning">Create an account</a></small>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let cart = [];
+
+function addToCart(name, price, btn) {
+  const qty = parseInt(btn.closest('.menu-card-footer').querySelector('.qty-input').value) || 1;
+  const existing = cart.find(i => i.name === name);
+  if (existing) existing.qty += qty;
+  else cart.push({name, price, qty});
+  updateCartUI();
+  btn.innerHTML = '<i class="fas fa-check me-1"></i>Added!';
+  btn.style.background = 'linear-gradient(135deg,#2D6A4F,#40916C)';
+  setTimeout(() => { btn.innerHTML = '<i class="fas fa-plus me-1"></i>Add'; btn.style.background = ''; }, 1500);
+}
+
+function updateCartUI() {
+  const panel = document.getElementById('cartPanel');
+  panel.style.display = 'block';
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  document.getElementById('cart-badge').textContent = cart.reduce((s, i) => s + i.qty, 0);
+  document.getElementById('cart-total-display').textContent = '₹' + total;
+  document.getElementById('cart-items-list').innerHTML = cart.map(i =>
+    `<div class="d-flex justify-content-between small py-1 border-bottom border-secondary">
+      <span>${i.name} x${i.qty}</span><span class="text-warning">₹${i.price*i.qty}</span>
+    </div>`
+  ).join('');
+  sessionStorage.setItem('cart', JSON.stringify(cart));
+  const jsonInput = document.getElementById('cartJsonInput');
+  if (jsonInput) jsonInput.value = JSON.stringify(cart);
+}
+
+// Restore cart on page load (e.g. after login redirect)
+try {
+  const saved = JSON.parse(sessionStorage.getItem('cart') || '[]');
+  if (saved.length) { cart = saved; updateCartUI(); }
+} catch(e) {}
+
+const checkoutForm = document.getElementById('checkoutForm');
+if (checkoutForm) {
+  checkoutForm.addEventListener('submit', () => {
+    document.getElementById('cartJsonInput').value = JSON.stringify(cart);
+  });
+}
+
+// Qty buttons
+document.querySelectorAll('.qty-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const inp = btn.closest('.input-group').querySelector('.qty-input');
+    let v = parseInt(inp.value) || 1;
+    if (btn.dataset.action === 'inc') v = Math.min(v + 1, 20);
+    else v = Math.max(v - 1, 1);
+    inp.value = v;
+  });
+});
+
+// Search
+document.getElementById('menuSearch').addEventListener('input', filterMenu);
+document.querySelectorAll('#categoryFilter button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#categoryFilter button').forEach(b => b.classList.remove('active','btn-saffron'));
+    btn.classList.add('active','btn-saffron');
+    filterMenu();
+  });
+});
+
+function filterMenu() {
+  const q = document.getElementById('menuSearch').value.toLowerCase();
+  const cat = document.querySelector('#categoryFilter .active').dataset.cat;
+  let visible = 0;
+  document.querySelectorAll('.menu-item-col').forEach(col => {
+    const name = col.dataset.name;
+    const c = col.dataset.cat;
+    const show = (cat === 'all' || c === cat) && name.includes(q);
+    col.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  document.getElementById('noResults').classList.toggle('d-none', visible > 0);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Manage Menu{% endblock %}
+{% block page_title %}🍛 Manage Menu Items{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-4"><i class="fas fa-plus-circle text-warning me-2"></i>Add New Item</h6>
+      <div class="row g-3">
+        <div class="col-12"><label class="form-label small fw-600">Item Name *</label><input type="text" class="form-control" id="newName" placeholder="e.g. Masala Bhel"></div>
+        <div class="col-12"><label class="form-label small fw-600">Price (₹) *</label><input type="number" class="form-control" id="newPrice" placeholder="0" min="1"></div>
+        <div class="col-12"><label class="form-label small fw-600">Category</label><select class="form-select" id="newCat"><option value="Special">Special</option><option value="Main Dishes">Main Dishes</option></select></div>
+        <div class="col-12"><label class="form-label small fw-600">Description</label><textarea class="form-control" id="newDesc" rows="2" placeholder="Short description…"></textarea></div>
+        <div class="col-12"><button class="btn btn-saffron w-100" onclick="addItem()"><i class="fas fa-save me-2"></i>Add Item</button></div>
+      </div>
+      <div id="addSuccess" class="alert alert-success mt-3 d-none small rounded-3">✅ Item added!</div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0"><i class="fas fa-list text-warning me-2"></i>Menu Items <span class="badge bg-secondary ms-1">{{ items|length }}</span></h6>
+        <input type="text" class="form-control form-control-sm" style="max-width:200px;" placeholder="Search…" oninput="filterMenu(this.value)">
+      </div>
+      <div class="table-responsive">
+        <table class="table table-cc table-hover" id="menuTable">
+          <thead><tr><th>#</th><th>Name</th><th>Category</th><th class="text-center">Price</th><th class="text-center">Status</th><th class="text-center">Actions</th></tr></thead>
+          <tbody>
+            {% for item in items %}
+            <tr id="row-{{ item.id }}" data-name="{{ item.name|lower }}">
+              <td class="small text-muted">{{ loop.index }}</td>
+              <td class="fw-600 small">{{ item.name }}</td>
+              <td><span class="cat-badge {% if item.category == 'Special' %}cat-special{% else %}cat-main{% endif %}">{{ item.category }}</span></td>
+              <td class="text-center fw-bold" style="color:var(--saffron);">₹{{ item.price|int }}</td>
+              <td class="text-center"><span class="badge {% if item.available %}bg-success{% else %}bg-secondary{% endif %}">{% if item.available %}Active{% else %}Hidden{% endif %}</span></td>
+              <td class="text-center">
+                <div class="d-flex gap-1 justify-content-center">
+                  <button class="btn btn-sm btn-outline-primary" onclick="editItem({{ item.id }},'{{ item.name }}',{{ item.price }},'{{ item.category }}',{{ item.available }})"><i class="fas fa-edit"></i></button>
+                  <button class="btn btn-sm btn-outline-danger" onclick="deleteItem({{ item.id }},'{{ item.name }}')"><i class="fas fa-trash"></i></button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4">
+      <div class="modal-header" style="background:linear-gradient(135deg,var(--saffron),var(--turmeric));color:white;border-radius:16px 16px 0 0;">
+        <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i>Edit Menu Item</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="editId">
+        <div class="row g-3">
+          <div class="col-12"><label class="form-label small fw-600">Item Name</label><input type="text" class="form-control" id="editName"></div>
+          <div class="col-md-6"><label class="form-label small fw-600">Price (₹)</label><input type="number" class="form-control" id="editPrice" min="1"></div>
+          <div class="col-md-6"><label class="form-label small fw-600">Category</label><select class="form-select" id="editCat"><option value="Special">Special</option><option value="Main Dishes">Main Dishes</option></select></div>
+          <div class="col-12"><label class="form-label small fw-600">Status</label><select class="form-select" id="editAvail"><option value="1">Active</option><option value="0">Hidden</option></select></div>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-saffron px-4" onclick="saveEdit()"><i class="fas fa-save me-2"></i>Save</button></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function addItem() {
+  const name=document.getElementById('newName').value.trim(), price=parseFloat(document.getElementById('newPrice').value);
+  const category=document.getElementById('newCat').value, description=document.getElementById('newDesc').value;
+  if (!name||!price) { alert('Enter name and price'); return; }
+  fetch('/api/admin/menu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,price,category,description})})
+    .then(r=>r.json()).then(d=>{ if(d.success){document.getElementById('addSuccess').classList.remove('d-none');setTimeout(()=>location.reload(),1200);}});
+}
+function editItem(id,name,price,cat,avail) {
+  document.getElementById('editId').value=id; document.getElementById('editName').value=name;
+  document.getElementById('editPrice').value=price; document.getElementById('editCat').value=cat;
+  document.getElementById('editAvail').value=avail;
+  new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+function saveEdit() {
+  fetch('/api/admin/menu',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    id:parseInt(document.getElementById('editId').value), name:document.getElementById('editName').value,
+    price:parseFloat(document.getElementById('editPrice').value), category:document.getElementById('editCat').value,
+    available:parseInt(document.getElementById('editAvail').value)
+  })}).then(r=>r.json()).then(d=>{if(d.success){bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();location.reload();}});
+}
+function deleteItem(id,name) {
+  if(!confirm(`Delete "${name}"?`)) return;
+  fetch('/api/admin/menu',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})})
+    .then(r=>r.json()).then(d=>{if(d.success){const r=document.getElementById('row-'+id);if(r)r.remove();}});
+}
+function filterMenu(q) {
+  q=q.toLowerCase();
+  document.querySelectorAll('#menuTable tbody tr[data-name]').forEach(tr=>{tr.style.display=tr.dataset.name.includes(q)?'':'none';});
+}
+</script>
+{% endblock %}

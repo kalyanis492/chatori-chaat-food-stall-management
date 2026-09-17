@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Chatori Chaat – Nashik's Favourite Chaat{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top cc-navbar">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Chatori Chaat" class="brand-logo-img">
+      <div>
+        <div class="brand-name">Chatori Chaat</div>
+        <div class="brand-tagline-small">Swad ka Patakha</div>
+      </div>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMain">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+        <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+        <li class="nav-item"><a class="nav-link" href="/menu">Menu</a></li>
+        <li class="nav-item"><a class="nav-link" href="/journey">Journey</a></li>
+        <li class="nav-item"><a class="nav-link" href="/aradhya">Aradhya</a></li>
+        <li class="nav-item"><a class="nav-link" href="/reviews">Reviews</a></li>
+        <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+        {% if session.get('customer_id') %}
+        <li class="nav-item dropdown ms-2">
+          <a class="nav-link cc-btn-nav dropdown-toggle" href="#" data-bs-toggle="dropdown">
+            <i class="fas fa-user-circle me-1"></i>{{ session.get('customer_name','My Account').split(' ')[0] }}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="/my-orders"><i class="fas fa-receipt me-2 text-warning"></i>My Orders</a></li>
+            <li><a class="dropdown-item" href="/menu"><i class="fas fa-utensils me-2 text-warning"></i>Order Now</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="/customer-logout"><i class="fas fa-sign-out-alt me-2 text-danger"></i>Logout</a></li>
+          </ul>
+        </li>
+        {% else %}
+        <li class="nav-item ms-2"><a class="nav-link cc-btn-nav" href="/customer-login"><i class="fas fa-user me-1"></i>Login / Order</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+{% block content %}{% endblock %}
+
+<!-- FOOTER -->
+<footer class="cc-footer">
+  <div class="container">
+    <div class="row g-4 py-5">
+      <div class="col-lg-4">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="footer-logo-img">
+          <div>
+            <h4 class="mb-0 text-white fw-bold">Chatori Chaat</h4>
+            <small class="text-warning">Swad ka Patakha, Mohalle ka Superstar</small>
+          </div>
+        </div>
+        <p class="text-light opacity-75 small">Nashik's most loved chaat stall. Fresh, hygienic, and absolutely delicious street food since June 2025.</p>
+        <div class="social-icons d-flex gap-3 mt-3">
+          <a href="https://www.instagram.com/chatori_.chaat" target="_blank" class="social-icon instagram"><i class="fab fa-instagram"></i></a>
+          <a href="https://wa.me/918421941950" target="_blank" class="social-icon whatsapp"><i class="fab fa-whatsapp"></i></a>
+          <a href="https://maps.google.com/?q=Sawarkar+Chowk+Nashik" target="_blank" class="social-icon gmap"><i class="fas fa-map-marker-alt"></i></a>
+        </div>
+      </div>
+      <div class="col-lg-2 col-6">
+        <h6 class="text-warning fw-bold mb-3">Quick Links</h6>
+        <ul class="list-unstyled footer-links">
+          <li><a href="/">Home</a></li><li><a href="/about">About Us</a></li>
+          <li><a href="/menu">Our Menu</a></li><li><a href="/journey">Our Journey</a></li>
+          <li><a href="/aradhya">Aradhya</a></li><li><a href="/reviews">Reviews</a></li><li><a href="/contact">Contact</a></li>
+        </ul>
+      </div>
+      <div class="col-lg-3 col-6">
+        <h6 class="text-warning fw-bold mb-3">Our Menu</h6>
+        <ul class="list-unstyled footer-links">
+          <li><a href="/menu">Panipuri – ₹25</a></li><li><a href="/menu">Dahipuri – ₹50</a></li>
+          <li><a href="/menu">Papdi Chaat – ₹50</a></li><li><a href="/menu">Khasta Bhel – ₹60</a></li>
+          <li><a href="/menu">Cheese Ragda Chaat – ₹60</a></li>
+        </ul>
+      </div>
+      <div class="col-lg-3">
+        <h6 class="text-warning fw-bold mb-3">Contact Us</h6>
+        <div class="footer-contact">
+          <p><i class="fas fa-map-marker-alt text-warning me-2"></i>Shop No. 9 Royal Complex, Sawarkar Chowk, Indira Nagar, Nashik</p>
+          <p><i class="fas fa-phone text-warning me-2"></i><a href="tel:8421941950">8421941950</a></p>
+          <p><i class="fab fa-whatsapp text-warning me-2"></i><a href="https://wa.me/918421941950">WhatsApp Us</a></p>
+          <p><i class="fas fa-envelope text-warning me-2"></i><a href="mailto:chatorichaat2305@gmail.com">chatorichaat2305@gmail.com</a></p>
+        </div>
+      </div>
+    </div>
+    <hr class="border-secondary">
+    <div class="row py-3">
+      <div class="col-md-6 text-center text-md-start">
+        <small class="text-light opacity-50">© 2025 Chatori Chaat. All rights reserved. | Piyush & Parnika Patil</small>
+      </div>
+      <div class="col-md-6 text-center text-md-end">
+        <small class="text-light opacity-50">Made with <i class="fas fa-heart text-danger"></i> in Nashik</small>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- WhatsApp Float -->
+<a href="https://wa.me/918421941950?text=Hi! I want to order from Chatori Chaat" class="whatsapp-float" target="_blank">
+  <i class="fab fa-whatsapp"></i>
+  <span class="whatsapp-tooltip">Order on WhatsApp</span>
+</a>
+
+<!-- Lightbox -->
+<div id="lightbox" class="lightbox-overlay" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()"><i class="fas fa-times"></i></button>
+  <div class="lightbox-nav prev" onclick="event.stopPropagation();lightboxNav(-1)"><i class="fas fa-chevron-left"></i></div>
+  <div class="lightbox-nav next" onclick="event.stopPropagation();lightboxNav(1)"><i class="fas fa-chevron-right"></i></div>
+  <div class="lightbox-content" onclick="event.stopPropagation()">
+    <img id="lightbox-img" src="" alt="">
+    <div id="lightbox-caption" class="lightbox-caption"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

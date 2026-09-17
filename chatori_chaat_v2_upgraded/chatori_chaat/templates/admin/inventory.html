@@ -1,0 +1,154 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Inventory & Stock{% endblock %}
+{% block page_title %}📦 Inventory & Stock Management{% endblock %}
+{% block content %}
+
+<!-- Stock Summary -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="fin-card revenue"><div class="fin-icon"><i class="fas fa-boxes"></i></div>
+      <div class="fin-value">{{ "%.1f"|format(total_stock) }}</div><div class="fin-label">Total Stock (units)</div></div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="fin-card expense"><div class="fin-icon"><i class="fas fa-fire"></i></div>
+      <div class="fin-value">{{ "%.1f"|format(used_stock) }}</div><div class="fin-label">Used Stock</div></div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="fin-card orders"><div class="fin-icon"><i class="fas fa-cubes"></i></div>
+      <div class="fin-value">{{ "%.1f"|format(remaining_stock) }}</div><div class="fin-label">Remaining Stock</div></div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="fin-card profit"><div class="fin-icon"><i class="fas fa-rupee-sign"></i></div>
+      <div class="fin-value">₹{{ "%.0f"|format(stock_value) }}</div><div class="fin-label">Stock Value</div></div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <h6 class="fw-bold mb-4"><i class="fas fa-plus-circle text-warning me-2"></i>Add Inventory Item</h6>
+      <div class="row g-3">
+        <div class="col-12"><label class="form-label small fw-600">Product Name *</label><input type="text" class="form-control" id="newName" placeholder="e.g. Papdi"></div>
+        <div class="col-6"><label class="form-label small fw-600">Unit</label><input type="text" class="form-control" id="newUnit" placeholder="kg / litre / packets" value="kg"></div>
+        <div class="col-6"><label class="form-label small fw-600">Low Stock Alert At</label><input type="number" class="form-control" id="newThreshold" value="5" min="0" step="0.1"></div>
+        <div class="col-6"><label class="form-label small fw-600">Available Qty</label><input type="number" class="form-control" id="newAvail" value="0" min="0" step="0.1"></div>
+        <div class="col-6"><label class="form-label small fw-600">Used Qty</label><input type="number" class="form-control" id="newUsed" value="0" min="0" step="0.1"></div>
+        <div class="col-6"><label class="form-label small fw-600">Purchase Cost (₹/unit)</label><input type="number" class="form-control" id="newCost" value="0" min="0" step="0.01"></div>
+        <div class="col-6"><label class="form-label small fw-600">Selling Price (₹)</label><input type="number" class="form-control" id="newSell" value="0" min="0" step="0.01"></div>
+        <div class="col-12"><button class="btn btn-saffron w-100" onclick="addItem()"><i class="fas fa-save me-2"></i>Add Item</button></div>
+      </div>
+      <div id="addSuccess" class="alert alert-success mt-3 d-none small rounded-3">✅ Inventory item added!</div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="bg-white rounded-4 shadow-sm p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0"><i class="fas fa-list text-warning me-2"></i>Stock Items <span class="badge bg-secondary ms-1">{{ items|length }}</span></h6>
+        <input type="text" class="form-control form-control-sm" style="max-width:200px;" placeholder="Search…" oninput="filterTable(this.value)">
+      </div>
+      <div class="table-responsive">
+        <table class="table table-cc table-hover" id="invTable">
+          <thead><tr><th>Product</th><th class="text-center">Available</th><th class="text-center">Used</th><th class="text-center">Remaining</th><th class="text-end">Value</th><th class="text-center">Status</th><th class="text-center">Actions</th></tr></thead>
+          <tbody>
+            {% for item in items %}
+            {% set remaining = item.available_qty - item.used_qty %}
+            <tr id="row-{{ item.id }}" data-name="{{ item.product_name|lower }}" class="{% if remaining <= item.low_stock_threshold %}table-warning{% endif %}">
+              <td class="fw-600 small">{{ item.product_name }}</td>
+              <td class="text-center small">{{ item.available_qty }} {{ item.unit }}</td>
+              <td class="text-center small">{{ item.used_qty }} {{ item.unit }}</td>
+              <td class="text-center small fw-bold">{{ remaining }} {{ item.unit }}</td>
+              <td class="text-end small">₹{{ "%.0f"|format(remaining * item.purchase_cost) }}</td>
+              <td class="text-center">
+                {% if remaining <= item.low_stock_threshold %}
+                <span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Low Stock</span>
+                {% else %}
+                <span class="badge bg-success">OK</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <div class="d-flex gap-1 justify-content-center">
+                  <button class="btn btn-sm btn-outline-primary" onclick='editItem({{ item.id }},"{{ item.product_name }}","{{ item.unit }}",{{ item.available_qty }},{{ item.used_qty }},{{ item.purchase_cost }},{{ item.selling_price }},{{ item.low_stock_threshold }})'><i class="fas fa-edit"></i></button>
+                  <button class="btn btn-sm btn-outline-danger" onclick="deleteItem({{ item.id }},'{{ item.product_name }}')"><i class="fas fa-trash"></i></button>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-5">No inventory items yet. Add your first item on the left.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4">
+      <div class="modal-header" style="background:linear-gradient(135deg,var(--saffron),var(--turmeric));color:white;border-radius:16px 16px 0 0;">
+        <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i>Edit Inventory Item</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="editId">
+        <div class="row g-3">
+          <div class="col-12"><label class="form-label small fw-600">Product Name</label><input type="text" class="form-control" id="editName"></div>
+          <div class="col-6"><label class="form-label small fw-600">Unit</label><input type="text" class="form-control" id="editUnit"></div>
+          <div class="col-6"><label class="form-label small fw-600">Low Stock Alert At</label><input type="number" class="form-control" id="editThreshold" step="0.1"></div>
+          <div class="col-6"><label class="form-label small fw-600">Available Qty</label><input type="number" class="form-control" id="editAvail" step="0.1"></div>
+          <div class="col-6"><label class="form-label small fw-600">Used Qty</label><input type="number" class="form-control" id="editUsed" step="0.1"></div>
+          <div class="col-6"><label class="form-label small fw-600">Purchase Cost (₹/unit)</label><input type="number" class="form-control" id="editCost" step="0.01"></div>
+          <div class="col-6"><label class="form-label small fw-600">Selling Price (₹)</label><input type="number" class="form-control" id="editSell" step="0.01"></div>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-saffron px-4" onclick="saveEdit()"><i class="fas fa-save me-2"></i>Save</button></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function addItem() {
+  const product_name = document.getElementById('newName').value.trim();
+  if (!product_name) { alert('Enter product name'); return; }
+  fetch('/api/inventory', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+    product_name, unit: document.getElementById('newUnit').value || 'kg',
+    available_qty: parseFloat(document.getElementById('newAvail').value)||0,
+    used_qty: parseFloat(document.getElementById('newUsed').value)||0,
+    purchase_cost: parseFloat(document.getElementById('newCost').value)||0,
+    selling_price: parseFloat(document.getElementById('newSell').value)||0,
+    low_stock_threshold: parseFloat(document.getElementById('newThreshold').value)||5
+  })}).then(r=>r.json()).then(d=>{ if(d.success){document.getElementById('addSuccess').classList.remove('d-none');setTimeout(()=>location.reload(),1000);} });
+}
+function editItem(id,name,unit,avail,used,cost,sell,threshold) {
+  document.getElementById('editId').value=id; document.getElementById('editName').value=name;
+  document.getElementById('editUnit').value=unit; document.getElementById('editAvail').value=avail;
+  document.getElementById('editUsed').value=used; document.getElementById('editCost').value=cost;
+  document.getElementById('editSell').value=sell; document.getElementById('editThreshold').value=threshold;
+  new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+function saveEdit() {
+  fetch('/api/inventory', {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+    id: parseInt(document.getElementById('editId').value),
+    product_name: document.getElementById('editName').value,
+    unit: document.getElementById('editUnit').value,
+    available_qty: parseFloat(document.getElementById('editAvail').value)||0,
+    used_qty: parseFloat(document.getElementById('editUsed').value)||0,
+    purchase_cost: parseFloat(document.getElementById('editCost').value)||0,
+    selling_price: parseFloat(document.getElementById('editSell').value)||0,
+    low_stock_threshold: parseFloat(document.getElementById('editThreshold').value)||5
+  })}).then(r=>r.json()).then(d=>{ if(d.success){ location.reload(); } });
+}
+function deleteItem(id,name) {
+  if (!confirm(`Delete "${name}" from inventory?`)) return;
+  fetch('/api/inventory', {method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id})})
+    .then(r=>r.json()).then(d=>{ if(d.success){ const r=document.getElementById('row-'+id); if(r) r.remove(); } });
+}
+function filterTable(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('#invTable tbody tr[data-name]').forEach(tr => { tr.style.display = tr.dataset.name.includes(q) ? '' : 'none'; });
+}
+</script>
+{% endblock %}

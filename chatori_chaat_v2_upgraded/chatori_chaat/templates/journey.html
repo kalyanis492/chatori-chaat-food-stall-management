@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Our Journey – Chatori Chaat{% endblock %}
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="section-eyebrow">Since June 2025</span>
+    <h1 class="mt-2">Our <span class="text-warning">Journey</span></h1>
+    <p class="mt-2 fs-5">From a small beginning to serving hundreds of happy customers.</p>
+  </div>
+</section>
+
+<!-- PHASE 1 -->
+<section class="py-5 bg-white">
+  <div class="container">
+    <div class="phase-card reveal">
+      <div class="phase-badge"><i class="fas fa-seedling me-2"></i>Phase 1 – Dream & Planning</div>
+      <div class="row align-items-center g-4">
+        <div class="col-lg-6">
+          <h3 class="fw-bold mb-3">Where It All <span style="color:var(--saffron);">Began</span></h3>
+          <p class="text-muted">Every great journey starts with a dream. For Piyush and Parnika Patil, the dream was simple yet powerful — to bring authentic Nashik chaat to their neighbourhood, served fresh, hygienic, and with a lot of love.</p>
+          <p class="text-muted">Months of planning, recipe testing, tasting sessions with family, and learning the art of running a food business — all led to one beautiful beginning.</p>
+          <div class="row g-3 mt-2">
+            <div class="col-6"><div class="d-flex align-items-center gap-2"><i class="fas fa-check-circle text-success"></i><span class="small">Recipe Development</span></div></div>
+            <div class="col-6"><div class="d-flex align-items-center gap-2"><i class="fas fa-check-circle text-success"></i><span class="small">Location Scouting</span></div></div>
+            <div class="col-6"><div class="d-flex align-items-center gap-2"><i class="fas fa-check-circle text-success"></i><span class="small">Equipment Setup</span></div></div>
+            <div class="col-6"><div class="d-flex align-items-center gap-2"><i class="fas fa-check-circle text-success"></i><span class="small">Branding & Design</span></div></div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="row g-3">
+            {% for icon, label in [('💡','The Dream'),('📋','Planning'),('🧑‍🍳','Recipe Testing'),('📍','Location Found')] %}
+            <div class="col-6">
+              <div class="rounded-3 p-3 text-center" style="background:var(--cream);">
+                <div class="fs-2 mb-1">{{ icon }}</div>
+                <div class="small fw-600">{{ label }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 2 INAUGURATION -->
+    <div class="phase-card green reveal">
+      <div class="phase-badge" style="background:linear-gradient(135deg,var(--leaf),#40916C);">
+        <i class="fas fa-star me-2"></i>Phase 2 – Inauguration Ceremony
+      </div>
+      <h3 class="fw-bold mb-2">Grand <span style="color:var(--leaf);">Opening Day</span></h3>
+      <p class="text-muted mb-4">
+        <em>"With the blessings of our family, well-wishers, and divine guidance, Chatori Chaat officially began its journey."</em>
+      </p>
+      <div class="row g-3 mb-4" id="inaugGallery">
+        {% set inaug = photos | selectattr('phase','equalto','inauguration') | list %}
+        {% if inaug %}
+          {% for photo in inaug %}
+          <div class="col-6 col-md-4 col-lg-3">
+            <div class="gallery-item" onclick="openLightbox('{{ photo.filename }}', '{{ photo.title|e }}', [{% for p in inaug %}{src:'{{ p.filename }}', caption:'{{ p.title|e }}'}{% if not loop.last %},{% endif %}{% endfor %}])">
+              <img src="{{ photo.filename }}" alt="{{ photo.title }}">
+              <div class="gallery-item-caption">{{ photo.title }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          {% set inaug_photos = [
+            ('opening.png','Opening Day'),
+            ('cook.jpeg','Our Chef in Action'),
+            ('Dahi_khasta.jpeg','Signature Dahi Khasta'),
+            ('Team.jpg','The Team'),
+            ('Melody.jpeg','Festive Melody'),
+            ('plates.png','Ready to Serve'),
+          ] %}
+          {% for fname, caption in inaug_photos %}
+          <div class="col-6 col-md-4 col-lg-2">
+            <div class="gallery-item" onclick="openLightbox('{{ url_for('static', filename='images/' + fname) }}', '{{ caption }}', [{% for f, c in inaug_photos %}{src:'{{ url_for('static', filename='images/' + f) }}', caption:'{{ c }}'}{% if not loop.last %},{% endif %}{% endfor %}])">
+              <img src="{{ url_for('static', filename='images/' + fname) }}" alt="{{ caption }}">
+              <div class="gallery-item-caption">{{ caption }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+      <div class="alert border-0 rounded-3" style="background:rgba(45,106,79,0.08); border-left:4px solid var(--leaf) !important;">
+        <i class="fas fa-info-circle text-success me-2"></i>
+        <strong>15 June 2025</strong> — Chatori Chaat opened its doors at Shop No. 9, Royal Complex, Sawarkar Chowk, Nashik. A dream came true!
+      </div>
+    </div>
+
+    <!-- PHASE 3 -->
+    <div class="phase-card blue reveal">
+      <div class="phase-badge" style="background:linear-gradient(135deg,#4361EE,#3a0ca3);">
+        <i class="fas fa-users me-2"></i>Phase 3 – Growing Customer Family
+      </div>
+      <h3 class="fw-bold mb-3">Milestones & <span style="color:#4361EE;">Achievements</span></h3>
+      <div class="row g-4">
+        {% for month, icon, title, desc in [
+          ('June 2025','🚀','Grand Opening!','Launched at Sawarkar Chowk. Sold out on Day 1! The neighbourhood went crazy for our Panipuri.'),
+          ('July 2025','⭐','First 100 Customers','Crossed 100 happy customers milestone. Community love was overwhelming!'),
+          ('August 2025','🎉','Special Events','Started accepting Kitty Parties, Birthday Parties & Bulk Orders.'),
+          ('September 2025','🏆','Top Rated','Became one of Nashik\'s top-rated chaat stalls with 4.9★ average.'),
+          ('October 2025','📱','Instagram Growth','@chatori_.chaat crossed 500 followers with viral food reels.'),
+          ('December 2025','🎊','500+ Customers','Served 500+ unique customers. A celebration of flavour and loyalty!'),
+        ] %}
+        <div class="col-md-6 reveal">
+          <div class="d-flex gap-3 p-3 rounded-3" style="background:rgba(67,97,238,0.04); border:1px solid rgba(67,97,238,0.1);">
+            <div class="fs-2 flex-shrink-0">{{ icon }}</div>
+            <div>
+              <div class="small text-primary fw-bold">{{ month }}</div>
+              <div class="fw-bold">{{ title }}</div>
+              <div class="text-muted small">{{ desc }}</div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- PHASE 4 -->
+    <div class="phase-card purple reveal">
+      <div class="phase-badge" style="background:linear-gradient(135deg,#7209B7,#560bad);">
+        <i class="fas fa-rocket me-2"></i>Phase 4 – Future Vision
+      </div>
+      <h3 class="fw-bold mb-3">What's <span style="color:#7209B7;">Next?</span></h3>
+      <div class="row g-4">
+        {% for icon, title, desc in [
+          ('🏪','Expand to 2nd Location','Open a second Chatori Chaat outlet in another Nashik neighbourhood by 2026.'),
+          ('📱','Chatori Chaat App','Launch a dedicated ordering app for home delivery and pre-ordering.'),
+          ('🎓','Chaat Academy','Train the next generation of chaat makers through our own training program.'),
+          ('🌍','Maharashtra-wide','Expand the Chatori Chaat franchise model across Maharashtra.'),
+        ] %}
+        <div class="col-md-6 reveal">
+          <div class="d-flex gap-3 p-3 rounded-3" style="background:rgba(114,9,183,0.04); border:1px solid rgba(114,9,183,0.1);">
+            <div class="fs-2 flex-shrink-0">{{ icon }}</div>
+            <div>
+              <div class="fw-bold">{{ title }}</div>
+              <div class="text-muted small">{{ desc }}</div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="py-5" style="background:linear-gradient(135deg,var(--dark),#3D1A00);">
+  <div class="container">
+    <div class="row g-4 text-center text-white">
+      {% for num, lbl, icon in [('500+','Happy Customers','😊'),('12','Menu Items','🍛'),('4.9★','Avg Rating','⭐'),('1+','Year of Joy','🎂')] %}
+      <div class="col-6 col-md-3 reveal">
+        <div class="fs-1">{{ icon }}</div>
+        <div class="h2 fw-bold text-warning mt-2 mb-0">{{ num }}</div>
+        <div class="text-white-50 small">{{ lbl }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
